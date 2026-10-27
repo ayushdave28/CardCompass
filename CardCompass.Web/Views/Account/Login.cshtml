@@ -3,36 +3,66 @@
     ViewData["Title"] = "Sign In";
 }
 
-<div class="container py-5">
+<div class="container py-5 my-md-4">
     <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="cc-surface-card p-4 p-md-5 shadow-lg">
+        <div class="col-lg-5 col-md-7 col-sm-10">
+            <div class="cc-surface-card p-4 p-md-5 shadow-lg border-0 rounded-4">
+                <!-- Brand Header -->
                 <div class="text-center mb-4">
-                    <div class="cc-brand-icon mx-auto mb-3">
+                    <div class="cc-brand-icon mx-auto mb-3 shadow-sm" style="width: 52px; height: 52px; font-size: 1.5rem;">
                         <i class="bi bi-compass-fill"></i>
                     </div>
-                    <h2 class="h3 fw-bold mb-1">Welcome Back</h2>
-                    <p class="text-muted small">Access your personal card portfolio & rewards ledger</p>
+                    <h2 class="h3 fw-bold mb-1 font-heading text-dark">Welcome Back</h2>
+                    <p class="text-muted small">Sign in to manage your portfolio, track reward points & compare cards</p>
                 </div>
 
+                <!-- Google Sign-In Button -->
+                <form asp-action="ExternalLogin" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" class="mb-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="provider" value="Google" />
+                    <button type="submit" class="btn btn-outline-dark w-100 py-2 d-flex align-items-center justify-content-center gap-2 border shadow-sm rounded-3 fw-semibold bg-white hover-shadow transition-all" style="border-color: #dadce0 !important;">
+                        <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                        <span>Continue with Google</span>
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="position-relative my-4 text-center">
+                    <hr class="text-secondary opacity-25 m-0" />
+                    <span class="position-absolute top-50 start-50 translate-middle px-3 bg-white text-muted small fw-medium">
+                        or sign in with email
+                    </span>
+                </div>
+
+                <!-- Email / Password Form -->
                 <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2 mb-3"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Email" class="form-label small fw-semibold">Email Address</label>
+                        <label asp-for="Email" class="form-label small fw-semibold text-dark">Email Address</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-envelope text-muted"></i></span>
-                            <input asp-for="Email" class="form-control" placeholder="name@example.com" autofocus required />
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control border-start-0 ps-0" placeholder="name@example.com" autofocus required />
                         </div>
                         <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label small fw-semibold">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-lock text-muted"></i></span>
-                            <input asp-for="Password" class="form-control" placeholder="••••••••" required />
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label asp-for="Password" class="form-label small fw-semibold text-dark mb-0">Password</label>
+                        </div>
+                        <div class="input-group mt-1">
+                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" type="password" id="loginPasswordInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="••••••••" required />
+                            <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" id="togglePasswordBtn" aria-label="Toggle password visibility">
+                                <i class="bi bi-eye text-muted" id="togglePasswordIcon"></i>
+                            </button>
                         </div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
@@ -41,26 +71,63 @@
                         <div class="form-check small">
                             <input class="form-check-input" type="checkbox" asp-for="RememberMe" id="chkRemember">
                             <label class="form-check-label text-muted" for="chkRemember">
-                                Remember me for 30 days
+                                Keep me signed in
                             </label>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-cc-primary w-100 py-2 mb-3">
+                    <button type="submit" class="btn btn-cc-primary w-100 py-2 mb-3 rounded-3 shadow-sm fw-semibold">
                         Sign In <i class="bi bi-arrow-right ms-1"></i>
                     </button>
                 </form>
 
+                <!-- Footer Switch -->
                 <div class="text-center pt-3 border-top small text-muted">
-                    Don't have an account yet? <a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" class="fw-bold">Create free account</a>
+                    Don't have an account yet? <a asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" class="fw-bold text-decoration-none text-teal">Create free account</a>
                 </div>
 
-                <!-- Admin Test Credentials Tip for Development -->
-                <div class="mt-4 p-3 bg-light rounded small text-muted">
-                    <strong class="text-dark d-block mb-1"><i class="bi bi-shield-lock me-1 text-primary"></i> Admin Access:</strong>
-                    <span>Email: <code>admin@cardcompass.in</code><br />Password: <code>CardCompass@Admin2026!</code></span>
+                <!-- Security Assurance Badges -->
+                <div class="mt-4 pt-3 border-top text-center">
+                    <div class="d-flex justify-content-center align-items-center gap-3 text-muted small">
+                        <span class="d-flex align-items-center gap-1" title="256-bit SSL Data Security">
+                            <i class="bi bi-shield-lock-fill text-success"></i> 256-bit SSL
+                        </span>
+                        <span>•</span>
+                        <span class="d-flex align-items-center gap-1" title="RBI Compliant Privacy Practices">
+                            <i class="bi bi-check-circle-fill text-teal"></i> RBI Compliant
+                        </span>
+                        <span>•</span>
+                        <span class="d-flex align-items-center gap-1" title="Zero Sensitive Financial Data Stored">
+                            <i class="bi bi-safe2-fill text-primary"></i> Zero Card Data
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            const passwordInput = document.getElementById('loginPasswordInput');
+            const icon = document.getElementById('togglePasswordIcon');
+
+            if (toggleBtn && passwordInput && icon) {
+                toggleBtn.addEventListener('click', function () {
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.classList.remove('bi-eye');
+                        icon.classList.add('bi-eye-slash');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.classList.remove('bi-eye-slash');
+                        icon.classList.add('bi-eye');
+                    }
+                });
+            }
+        });
+    </script>
+}
