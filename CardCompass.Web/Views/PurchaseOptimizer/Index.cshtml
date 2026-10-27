@@ -1,0 +1,203 @@
+@model CardCompass.Web.Models.ViewModels.PurchaseOptimizerViewModel
+@using Microsoft.AspNetCore.Identity
+@using CardCompass.Web.Models.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+
+@{
+    ViewData["Title"] = "Best Card for a Purchase Advisor";
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">Purchase Advisor</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1">Best Card for a Purchase Advisor</h1>
+        <p class="text-white-50 small mb-0">Discover which credit card delivers maximum cashback or reward value for your upcoming transaction</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- Transaction Input Box -->
+        <div class="col-lg-5">
+            <div class="cc-surface-card p-4 shadow-sm sticky-top" style="top: 80px;">
+                <h4 class="h5 fw-bold mb-3 text-dark"><i class="bi bi-cart-check me-2 text-primary"></i> Transaction Details</h4>
+
+                <form asp-action="Optimize" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Purchase Amount (₹)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text fw-bold">₹</span>
+                            <input type="number" asp-for="Amount" class="form-control fw-bold fs-4 text-primary" min="1" step="50" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Spending Category</label>
+                        <select asp-for="Category" class="form-select">
+                            <option value="OnlineShopping">Online Shopping (Amazon, Flipkart, Myntra)</option>
+                            <option value="Dining">Dining & Food Delivery (Swiggy, Zomato)</option>
+                            <option value="Grocery">Groceries & Supermarkets (BigBasket, Instamart)</option>
+                            <option value="Travel">Travel, Flight Tickets & Hotels</option>
+                            <option value="Fuel">Fuel & Petrol Pumps</option>
+                            <option value="Utilities">Utility Bills & Mobile Recharge</option>
+                            <option value="UPI">UPI Merchant QR Code Scan</option>
+                            <option value="International">International Currency Transaction</option>
+                            <option value="GeneralSpends">General In-Store Retail / POS</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Merchant / Brand (Optional)</label>
+                        <input type="text" asp-for="MerchantName" class="form-control" placeholder="e.g. Amazon, Swiggy, Flipkart, BPCL..." />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold d-block">Search Scope</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="SelectionMode" id="modeAll" value="all" @(Model.SelectionMode == "all" ? "checked" : "")>
+                            <label class="btn btn-outline-secondary btn-sm" for="modeAll">All 30 Cards</label>
+
+                            <input type="radio" class="btn-check" name="SelectionMode" id="modeWallet" value="wallet" @(Model.SelectionMode == "wallet" ? "checked" : "") @(!SignInManager.IsSignedIn(User) ? "disabled" : "")>
+                            <label class="btn btn-outline-secondary btn-sm" for="modeWallet">
+                                My Wallet Cards @(!SignInManager.IsSignedIn(User) ? "(Sign in)" : "")
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-cc-primary w-100 py-2">
+                        <i class="bi bi-lightning-charge me-1"></i> Recommend Best Card
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Area -->
+        <div class="col-lg-7">
+            @if (Model.HasCalculated && Model.BestCardOption != null)
+            {
+                var best = Model.BestCardOption;
+                var card = best.Card;
+
+                <!-- Winner Card Box -->
+                <div class="cc-surface-card p-4 shadow-sm highlight mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-success px-3 py-2 fs-6">
+                            <i class="bi bi-trophy-fill me-1"></i> Recommended Card
+                        </span>
+                        <span class="badge bg-light text-dark border">
+                            @best.EffectiveRatePercent.ToString("0.##")% Effective Value
+                        </span>
+                    </div>
+
+                    <div class="row g-4 align-items-center mb-3">
+                        <div class="col-md-5">
+                            <div class="cc-card-art w-100" style="background: @card.CardGradient; aspect-ratio: 1.586;">
+                                <div class="cc-card-top">
+                                    <div class="cc-card-bank"><i class="bi bi-bank"></i> @(card.Bank?.Name)</div>
+                                    <div class="cc-contactless-icon"><i class="bi bi-reception-4"></i></div>
+                                </div>
+                                <div class="cc-card-middle">
+                                    <div class="cc-emv-chip @(card.ChipColor == "silver" ? "silver" : "")"></div>
+                                </div>
+                                <div class="cc-card-bottom">
+                                    <div>
+                                        <div class="cc-card-tier">@card.Category.ToString()</div>
+                                        <div class="cc-card-name small">@card.Name</div>
+                                    </div>
+                                    <div class="cc-network-badge">@card.Network.ToString()</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <h3 class="h4 fw-bold mb-1 text-dark">@card.Name</h3>
+                            <div class="text-muted small mb-3">Issued by @card.Bank?.Name</div>
+
+                            <div class="p-3 bg-light rounded mb-3">
+                                <div class="small text-muted mb-1">Estimated Return on this Purchase:</div>
+                                <div class="fw-bold fs-3 text-success">₹@best.EstimatedReturnRupees.ToString("N2")</div>
+                                <div class="small text-muted">(@best.EffectiveRatePercent.ToString("0.##")% return on ₹@Model.Amount.ToString("N0"))</div>
+                            </div>
+
+                            <p class="small text-dark mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i> @best.Explanation
+                            </p>
+
+                            @if (!string.IsNullOrEmpty(best.WarningOrCapNotice))
+                            {
+                                <div class="small text-muted bg-warning bg-opacity-10 p-2 rounded">
+                                    <i class="bi bi-info-circle me-1 text-warning"></i> @best.WarningOrCapNotice
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <a asp-controller="Cards" asp-action="Details" asp-route-slug="@card.Slug" class="btn btn-sm btn-cc-outline-dark">
+                            View Card Profile
+                        </a>
+                        <a href="/Compare?ids=@card.Id" class="btn btn-sm btn-outline-secondary">
+                            Compare
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Alternative Cards Table -->
+                @if (Model.AlternativeOptions.Any())
+                {
+                    <div class="cc-surface-card p-4 shadow-sm">
+                        <h5 class="fw-bold mb-3 pb-2 border-bottom">Alternative Cards for this Purchase</h5>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Card</th>
+                                        <th>Return Rate</th>
+                                        <th class="text-end">Estimated Value</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="small">
+                                    @foreach (var alt in Model.AlternativeOptions)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold text-dark">@alt.Card.Name</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">@alt.Card.Bank?.Name</div>
+                                            </td>
+                                            <td class="text-primary fw-bold">@alt.EffectiveRatePercent.ToString("0.##")%</td>
+                                            <td class="text-end fw-bold text-success">₹@alt.EstimatedReturnRupees.ToString("N2")</td>
+                                            <td class="text-end">
+                                                <a asp-controller="Cards" asp-action="Details" asp-route-slug="@alt.Card.Slug" class="btn btn-xs btn-outline-secondary py-1 px-2">
+                                                    View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="cc-surface-card p-5 text-center my-4">
+                    <div class="display-3 text-primary mb-3"><i class="bi bi-credit-card-2-back"></i></div>
+                    <h3 class="h4 fw-bold mb-2">Find the Best Card for Your Transaction</h3>
+                    <p class="text-muted small mb-0" style="max-width: 480px; margin: 0 auto;">
+                        Enter your purchase amount and merchant category on the left to see which card earns the highest return. Excludes unverified merchant-specific offers.
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

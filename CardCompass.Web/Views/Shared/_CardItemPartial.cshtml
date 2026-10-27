@@ -1,0 +1,112 @@
+@model CardCompass.Web.Models.Entities.CreditCard
+@{
+    var topReward = Model.RewardRules.OrderByDescending(r => r.EarningRatePercent).FirstOrDefault();
+    var topRate = topReward?.EarningRatePercent ?? 1.0m;
+    var userFavorites = ViewData["UserFavorites"] as List<int> ?? new List<int>();
+    var isFav = userFavorites.Contains(Model.Id);
+}
+
+<div class="card cc-surface-card h-100 border-0 shadow-sm position-relative d-flex flex-column justify-content-between">
+    <div>
+        <!-- Realistic Credit Card Graphic -->
+        <div class="cc-card-art mb-3" style="background: @Model.CardGradient;">
+            <div class="cc-card-top">
+                <div class="cc-card-bank">
+                    <i class="bi bi-bank"></i>
+                    <span>@(Model.Bank?.Name ?? "Bank Card")</span>
+                </div>
+                <div class="cc-contactless-icon">
+                    <i class="bi bi-reception-4"></i>
+                </div>
+            </div>
+
+            <div class="cc-card-middle">
+                <div class="cc-emv-chip @(Model.ChipColor == "silver" ? "silver" : "")"></div>
+                @if (Model.RuPaySupported)
+                {
+                    <span class="badge bg-light text-dark fw-bold px-2 py-1"><i class="bi bi-qr-code-scan me-1 text-primary"></i> RuPay UPI</span>
+                }
+            </div>
+
+            <div class="cc-card-bottom">
+                <div>
+                    <div class="cc-card-tier">@Model.Category.ToString()</div>
+                    <div class="cc-card-name">@Model.Name</div>
+                </div>
+                <div class="cc-network-badge">
+                    @Model.Network.ToString()
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges Bar -->
+        <div class="d-flex flex-wrap gap-1 mb-3">
+            @if (Model.AnnualFee == 0)
+            {
+                <span class="cc-badge cc-badge-free"><i class="bi bi-gift-fill"></i> Lifetime Free</span>
+            }
+            else
+            {
+                <span class="cc-badge cc-badge-teal"><i class="bi bi-tag-fill"></i> Fee: ₹@Model.AnnualFee.ToString("N0")</span>
+            }
+
+            @if (Model.LoungeAccessDomestic > 0)
+            {
+                <span class="cc-badge cc-badge-lounge"><i class="bi bi-airplane-engines-fill"></i> @(Model.LoungeAccessDomestic >= 999 ? "Unlimited" : Model.LoungeAccessDomestic.ToString()) Lounges</span>
+            }
+
+            @if (Model.RuPaySupported)
+            {
+                <span class="cc-badge cc-badge-rupay"><i class="bi bi-phone-fill"></i> UPI Scan</span>
+            }
+        </div>
+
+        <!-- Reward Highlights -->
+        <div class="cc-stat-box mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="cc-stat-label">Max Reward Rate</div>
+                    <div class="cc-stat-value text-primary">@topRate.ToString("0.##")%</div>
+                </div>
+                <div class="text-end">
+                    <div class="cc-stat-label">Fee Waiver Spend</div>
+                    <div class="fw-bold text-dark">
+                        @(Model.FeeWaiverSpendThreshold.HasValue ? "₹" + (Model.FeeWaiverSpendThreshold.Value / 100000m).ToString("0.#") + " Lakh/yr" : "N/A")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pros Summary -->
+        @if (!string.IsNullOrEmpty(Model.Pros))
+        {
+            var prosList = Model.Pros.Split('|', StringSplitOptions.RemoveEmptyEntries).Take(2);
+            <ul class="list-unstyled small text-muted mb-3">
+                @foreach (var pro in prosList)
+                {
+                    <li class="d-flex align-items-start mb-1">
+                        <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                        <span>@pro</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="pt-3 border-top mt-2">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <a asp-controller="Cards" asp-action="Details" asp-route-slug="@Model.Slug" class="btn btn-sm btn-cc-outline-dark flex-grow-1 text-center">
+                View Details
+            </a>
+
+            <button type="button" class="btn btn-sm btn-outline-secondary btn-add-compare" data-card-id="@Model.Id" data-card-name="@Model.Name" title="Add to side-by-side comparison">
+                <i class="bi bi-plus-lg me-1"></i> Compare
+            </button>
+
+            <button type="button" class="btn btn-sm btn-light btn-toggle-favorite @(isFav ? "text-danger" : "text-muted")" data-card-id="@Model.Id" title="Save to favorites">
+                <i class="bi @(isFav ? "bi-heart-fill" : "bi-heart") fs-6"></i>
+            </button>
+        </div>
+    </div>
+</div>

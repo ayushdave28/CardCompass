@@ -1,0 +1,64 @@
+@model List<CardCompass.Web.Models.Entities.Feedback>
+@{
+    ViewData["Title"] = "User Feedback & Suggestions";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left me-1"></i> Back to Admin</a>
+            <h1 class="h3 fw-bold mb-0">User Inquiries & Feedback (@Model.Count)</h1>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="cc-surface-card p-5 text-center shadow-sm">
+            <div class="display-4 text-muted mb-3"><i class="bi bi-inbox"></i></div>
+            <h4 class="h5 fw-bold mb-1">Inbox Empty</h4>
+            <p class="text-muted small">No user feedback submissions yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var fb in Model)
+            {
+                <div class="cc-surface-card p-4 shadow-sm @(!fb.IsReviewed ? "border-start border-4 border-warning" : "")">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">@fb.Subject</h5>
+                            <div class="small text-muted">
+                                From: <strong>@fb.Name</strong> &lt;@fb.Email&gt; • @fb.SubmittedAt.ToString("dd MMM yyyy, hh:mm tt")
+                            </div>
+                        </div>
+                        <div>
+                            @if (fb.IsReviewed)
+                            {
+                                <span class="badge bg-success-subtle text-success">Reviewed</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Pending Review</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded text-dark small mb-3">
+                        @fb.Message
+                    </div>
+
+                    @if (!fb.IsReviewed)
+                    {
+                        <form asp-action="MarkFeedbackReviewed" asp-route-id="@fb.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-check2 me-1"></i> Mark as Reviewed
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

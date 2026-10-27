@@ -1,0 +1,208 @@
+@model CardCompass.Web.Models.ViewModels.CardCatalogViewModel
+@{
+    ViewData["Title"] = "Credit Card Directory & Catalogue";
+    ViewData["UserFavorites"] = Model.UserFavoriteCardIds;
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small mb-1">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">Cards Catalogue</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold mb-1">Indian Credit Card Directory</h1>
+                <p class="text-white-50 small mb-0">Browse and filter @Model.TotalItems verified cards with full fee, reward, and lounge disclosures</p>
+            </div>
+            <div>
+                <a asp-controller="Recommendation" asp-action="Index" class="btn btn-sm btn-cc-emerald">
+                    <i class="bi bi-magic me-1"></i> Match To My Spending
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3">
+            <div class="cc-surface-card p-3 shadow-sm sticky-top" style="top: 80px; z-index: 10;">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <span class="fw-bold text-dark"><i class="bi bi-funnel me-1 text-primary"></i> Filters</span>
+                    <a href="/Cards" class="small text-danger text-decoration-none">Reset All</a>
+                </div>
+
+                <form id="filterForm" method="get" asp-action="Index">
+                    <!-- Search Input -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Search Cards</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="searchQuery" value="@Model.Filter.SearchQuery" class="form-control" placeholder="Name or keyword..." />
+                        </div>
+                    </div>
+
+                    <!-- Bank Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Issuing Bank</label>
+                        <select name="bankId" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Banks (@Model.AvailableBanks.Count)</option>
+                            @foreach (var bank in Model.AvailableBanks)
+                            {
+                                <option value="@bank.Id" selected="@(Model.Filter.BankId == bank.Id)">@bank.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Primary Category</label>
+                        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            @foreach (CardCompass.Web.Models.Entities.CardCategory cat in Enum.GetValues(typeof(CardCompass.Web.Models.Entities.CardCategory)))
+                            {
+                                <option value="@cat" selected="@(Model.Filter.Category == cat)">@cat.ToString()</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Annual Fee Category -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Annual Fee Tier</label>
+                        <select name="feeType" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="all" selected="@(string.IsNullOrEmpty(Model.Filter.FeeType) || Model.Filter.FeeType == "all")">Any Annual Fee</option>
+                            <option value="free" selected="@(Model.Filter.FeeType == "free")">Lifetime Free (₹0)</option>
+                            <option value="under1000" selected="@(Model.Filter.FeeType == "under1000")">₹1 to ₹1,000</option>
+                            <option value="under5000" selected="@(Model.Filter.FeeType == "under5000")">₹1,001 to ₹5,000</option>
+                            <option value="premium" selected="@(Model.Filter.FeeType == "premium")">Premium (&gt; ₹5,000)</option>
+                        </select>
+                    </div>
+
+                    <!-- Network Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Card Network</label>
+                        <select name="network" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Networks</option>
+                            @foreach (CardCompass.Web.Models.Entities.CardNetwork net in Enum.GetValues(typeof(CardCompass.Web.Models.Entities.CardNetwork)))
+                            {
+                                <option value="@net" selected="@(Model.Filter.Network == net)">@net.ToString()</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Special Features Checkboxes -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold d-block">Special Features</label>
+                        <div class="form-check form-check-sm mb-1">
+                            <input class="form-check-input" type="checkbox" name="ruPayOnly" value="true" id="chkRuPay" @(Model.Filter.RuPayOnly ? "checked" : "") onchange="this.form.submit()" />
+                            <label class="form-check-label small" for="chkRuPay">
+                                RuPay / UPI Enabled Only
+                            </label>
+                        </div>
+                        <div class="form-check form-check-sm">
+                            <input class="form-check-input" type="checkbox" name="loungeOnly" value="true" id="chkLounge" @(Model.Filter.LoungeOnly ? "checked" : "") onchange="this.form.submit()" />
+                            <label class="form-check-label small" for="chkLounge">
+                                Airport Lounge Access
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sort Dropdown (hidden in form, submitted on filter) -->
+                    <input type="hidden" name="sortBy" value="@Model.Filter.SortBy" />
+
+                    <button type="submit" class="btn btn-sm btn-cc-primary w-100">
+                        Apply Filters
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Cards Grid Area -->
+        <div class="col-lg-9">
+            <!-- Active Filters Bar & Sorter -->
+            <div class="cc-surface-card p-3 mb-4 shadow-sm d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                <div class="small text-muted">
+                    Showing <strong class="text-dark">@Model.Cards.Count</strong> of <strong class="text-dark">@Model.TotalItems</strong> cards found
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <label class="small text-muted text-nowrap">Sort By:</label>
+                    <select class="form-select form-select-sm w-auto" onchange="location.href = updateQueryString('sortBy', this.value)">
+                        <option value="popular" selected="@(Model.Filter.SortBy == "popular")">Most Popular</option>
+                        <option value="fee_asc" selected="@(Model.Filter.SortBy == "fee_asc")">Annual Fee: Low to High</option>
+                        <option value="fee_desc" selected="@(Model.Filter.SortBy == "fee_desc")">Annual Fee: High to Low</option>
+                        <option value="rewards_desc" selected="@(Model.Filter.SortBy == "rewards_desc")">Highest Reward Rate</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Cards Grid or Empty State -->
+            @if (Model.Cards.Any())
+            {
+                <div class="row g-4 mb-4">
+                    @foreach (var card in Model.Cards)
+                    {
+                        <div class="col-md-6 col-xl-4">
+                            <partial name="_CardItemPartial" model="card" />
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(Model.Filter.PageNumber <= 1 ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Filter.PageNumber - 1, searchQuery = Model.Filter.SearchQuery, bankId = Model.Filter.BankId, category = Model.Filter.Category, feeType = Model.Filter.FeeType, network = Model.Filter.Network, ruPayOnly = Model.Filter.RuPayOnly, loungeOnly = Model.Filter.LoungeOnly, sortBy = Model.Filter.SortBy })">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
+
+                            @for (int p = 1; p <= Model.TotalPages; p++)
+                            {
+                                <li class="page-item @(p == Model.Filter.PageNumber ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = p, searchQuery = Model.Filter.SearchQuery, bankId = Model.Filter.BankId, category = Model.Filter.Category, feeType = Model.Filter.FeeType, network = Model.Filter.Network, ruPayOnly = Model.Filter.RuPayOnly, loungeOnly = Model.Filter.LoungeOnly, sortBy = Model.Filter.SortBy })">
+                                        @p
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.Filter.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Filter.PageNumber + 1, searchQuery = Model.Filter.SearchQuery, bankId = Model.Filter.BankId, category = Model.Filter.Category, feeType = Model.Filter.FeeType, network = Model.Filter.Network, ruPayOnly = Model.Filter.RuPayOnly, loungeOnly = Model.Filter.LoungeOnly, sortBy = Model.Filter.SortBy })">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="cc-surface-card p-5 text-center my-4">
+                    <div class="display-4 text-muted mb-3"><i class="bi bi-search"></i></div>
+                    <h3 class="h4 fw-bold mb-2">No Credit Cards Match Your Filter</h3>
+                    <p class="text-muted small mb-4">Try removing some filter criteria or clearing your search term to see more cards.</p>
+                    <a href="/Cards" class="btn btn-cc-primary">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All Filters
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function updateQueryString(key, value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set(key, value);
+            url.searchParams.set('pageNumber', '1');
+            return url.toString();
+        }
+    </script>
+}

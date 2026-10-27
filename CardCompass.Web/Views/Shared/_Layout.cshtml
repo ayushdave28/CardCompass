@@ -1,0 +1,256 @@
+@using Microsoft.AspNetCore.Identity
+@using CardCompass.Web.Models.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CardCompass | Find The Card That Works For You</title>
+    <meta name="description" content="Discover, compare, and optimize the best Indian credit cards. Calculate real rewards, fees, and lounge access with verified data." />
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navbar -->
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg cc-navbar">
+            <div class="container">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    <div class="cc-brand-icon">
+                        <i class="bi bi-compass-fill"></i>
+                    </div>
+                    <span>CardCompass</span>
+                </a>
+
+                <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list fs-2 text-white"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                        <li class="nav-item">
+                            <a class="nav-link cc-nav-link" asp-controller="Cards" asp-action="Index">
+                                <i class="bi bi-grid-3x3-gap"></i> All Cards
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link cc-nav-link" asp-controller="Compare" asp-action="Index">
+                                <i class="bi bi-layout-split"></i> Compare
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link cc-nav-link" asp-controller="Recommendation" asp-action="Index">
+                                <i class="bi bi-magic"></i> Match Wizard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link cc-nav-link" asp-controller="Calculator" asp-action="Index">
+                                <i class="bi bi-calculator"></i> Calculator
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link cc-nav-link" asp-controller="PurchaseOptimizer" asp-action="Index">
+                                <i class="bi bi-lightning-charge"></i> Purchase Advisor
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="d-flex align-items-center gap-2">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            var user = await UserManager.GetUserAsync(User);
+                            var isAdmin = User.IsInRole("Admin");
+
+                            <div class="dropdown">
+                                <button class="btn btn-cc-outline dropdown-toggle py-2 px-3" type="button" id="userMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i>
+                                    <span>@(user?.FullName ?? User.Identity?.Name ?? "My Account")</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenuBtn">
+                                    <li><h6 class="dropdown-header">Customer Portal</h6></li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Dashboard" asp-action="Index">
+                                            <i class="bi bi-speedometer2 me-2 text-primary"></i> Personal Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Dashboard" asp-action="Wallet">
+                                            <i class="bi bi-wallet2 me-2 text-success"></i> My Card Wallet
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Dashboard" asp-action="Expenses">
+                                            <i class="bi bi-receipt me-2 text-warning"></i> Expense & Rewards Ledger
+                                        </a>
+                                    </li>
+
+                                    @if (isAdmin)
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><h6 class="dropdown-header text-danger">Administration</h6></li>
+                                        <li>
+                                            <a class="dropdown-item py-2 text-danger fw-bold" asp-controller="Admin" asp-action="Index">
+                                                <i class="bi bi-shield-lock me-2"></i> Admin Console
+                                            </a>
+                                        </li>
+                                    }
+
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm" class="p-0 m-0">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item py-2 text-muted">
+                                                <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="btn btn-cc-outline py-2 px-3" asp-controller="Account" asp-action="Login">
+                                Sign In
+                            </a>
+                            <a class="btn btn-cc-primary py-2 px-3" asp-controller="Recommendation" asp-action="Index">
+                                Find My Best Card
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Body -->
+    <main role="main" class="flex-grow-1">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="container mt-3">
+                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    <div>@TempData["SuccessMessage"]</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="container mt-3">
+                <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div>@TempData["ErrorMessage"]</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    <!-- Floating Comparison Tray (Appears when cards are selected) -->
+    <div id="ccCompareTray" class="position-fixed bottom-0 start-50 translate-middle-x mb-3 p-3 bg-dark text-white rounded-pill shadow-lg d-none" style="z-index: 1050; min-width: 320px; border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-2 py-1" id="ccCompareCount">0</span>
+                <span class="small fw-semibold">Cards selected to compare</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="ccClearCompareBtn" class="btn btn-sm btn-link text-white-50 text-decoration-none">Clear</button>
+                <a id="ccCompareLaunchBtn" href="/Compare" class="btn btn-sm btn-cc-primary py-1 px-3 rounded-pill">
+                    Compare Now <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="ccToastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
+
+    <!-- Footer -->
+    <footer class="cc-footer mt-auto">
+        <div class="container">
+            <div class="row g-4 mb-5">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="cc-brand-icon">
+                            <i class="bi bi-compass-fill"></i>
+                        </div>
+                        <span class="fs-4 fw-bold text-white">CardCompass</span>
+                    </div>
+                    <p class="small text-muted mb-3">
+                        Find the card that works for you. Transparent, source-verified Indian credit card recommendations, reward valuations, and side-by-side comparison.
+                    </p>
+                    <div class="d-flex gap-3 text-muted">
+                        <a href="https://twitter.com" target="_blank" rel="noopener" class="text-secondary"><i class="bi bi-twitter-x fs-5"></i></a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener" class="text-secondary"><i class="bi bi-linkedin fs-5"></i></a>
+                        <a href="https://github.com" target="_blank" rel="noopener" class="text-secondary"><i class="bi bi-github fs-5"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h5>Features</h5>
+                    <ul class="cc-footer-links">
+                        <li><a asp-controller="Cards" asp-action="Index">Card Directory</a></li>
+                        <li><a asp-controller="Compare" asp-action="Index">Compare 3 Cards</a></li>
+                        <li><a asp-controller="Recommendation" asp-action="Index">Personalized Match</a></li>
+                        <li><a asp-controller="Calculator" asp-action="Index">Rewards Calculator</a></li>
+                        <li><a asp-controller="PurchaseOptimizer" asp-action="Index">Purchase Optimizer</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-md-3 col-6">
+                    <h5>Top Categories</h5>
+                    <ul class="cc-footer-links">
+                        <li><a href="/Cards?category=Cashback">Cashback Cards</a></li>
+                        <li><a href="/Cards?category=Travel">Travel & Air Miles</a></li>
+                        <li><a href="/Cards?ruPayOnly=true">RuPay UPI Cards</a></li>
+                        <li><a href="/Cards?feeType=free">Lifetime Free Cards</a></li>
+                        <li><a href="/Cards?loungeOnly=true">Lounge Access Cards</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-4 col-md-12">
+                    <h5>CardCompass Research & Editorial</h5>
+                    <p class="small text-muted mb-3">
+                        Our recommendation engine uses deterministic mathematics backed by official bank Most Important Terms and Conditions (MITC) and Schedule of Charges.
+                    </p>
+                    <ul class="cc-footer-links">
+                        <li><a asp-controller="Home" asp-action="About">About Our Methodology</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact">Feedback & Contact</a></li>
+                        <li><a asp-controller="Home" asp-action="Terms">Terms of Service</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Regulatory Disclaimer -->
+            <div class="cc-disclaimer-box mb-4">
+                <p class="mb-1 fw-bold text-light">
+                    <i class="bi bi-shield-check me-1 text-teal"></i> Regulatory & Financial Information Disclaimer:
+                </p>
+                <p class="mb-0">
+                    CardCompass is an independent financial technology comparison and recommendation platform. We are not a scheduled commercial bank, non-banking financial company (NBFC), or credit bureau. CardCompass does not issue credit cards or make underwriting decisions. All credit approvals, credit limits, interest rates (APR), reward terms, and fee waivers are determined exclusively by the respective issuing banks in accordance with RBI guidelines and their internal policies. Financial calculations and reward estimates are provided for informational and comparative purposes only. Card features are updated periodically from official bank disclosures.
+                </p>
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-25 small text-muted">
+                <div>© @DateTime.UtcNow.Year CardCompass Technologies. Built for Indian Consumers.</div>
+                <div class="mt-2 mt-sm-0">
+                    All trademarks, logos and brand names belong to their respective banks and card issuers.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

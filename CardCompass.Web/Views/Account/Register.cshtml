@@ -1,0 +1,69 @@
+@model CardCompass.Web.Models.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Create Free Account";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="cc-surface-card p-4 p-md-5 shadow-lg">
+                <div class="text-center mb-4">
+                    <div class="cc-brand-icon mx-auto mb-3">
+                        <i class="bi bi-compass-fill"></i>
+                    </div>
+                    <h2 class="h3 fw-bold mb-1">Create Account</h2>
+                    <p class="text-muted small">Track your cards, monitor reward balances & save comparisons</p>
+                </div>
+
+                <form asp-action="Register" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2 mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label small fw-semibold">Full Name</label>
+                        <input asp-for="FullName" class="form-control" placeholder="Aarav Sharma" required />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label small fw-semibold">Email Address</label>
+                        <input asp-for="Email" class="form-control" placeholder="aarav@example.com" required />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label asp-for="Password" class="form-label small fw-semibold">Password</label>
+                            <input asp-for="Password" class="form-control" placeholder="Min. 6 chars" required />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold">Confirm</label>
+                            <input asp-for="ConfirmPassword" class="form-control" placeholder="Repeat" required />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MonthlyIncome" class="form-label small fw-semibold">Approx. Monthly Income (₹) <span class="text-muted">(Optional)</span></label>
+                        <input asp-for="MonthlyIncome" class="form-control" placeholder="e.g. 75000" />
+                        <span asp-validation-for="MonthlyIncome" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Occupation" class="form-label small fw-semibold">Occupation <span class="text-muted">(Optional)</span></label>
+                        <input asp-for="Occupation" class="form-control" placeholder="e.g. Software Engineer, Consultant" />
+                    </div>
+
+                    <button type="submit" class="btn btn-cc-emerald w-100 py-2 mb-3">
+                        Register Account <i class="bi bi-person-check ms-1"></i>
+                    </button>
+                </form>
+
+                <div class="text-center pt-3 border-top small text-muted">
+                    Already have an account? <a asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" class="fw-bold">Sign In here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

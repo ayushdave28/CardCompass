@@ -1,0 +1,272 @@
+@model CardCompass.Web.Models.ViewModels.CalculatorPageViewModel
+@{
+    var card = Model.SelectedCard;
+    ViewData["Title"] = card != null ? $"{card.Name} Rewards Calculator" : "Credit Card Rewards Calculator";
+    var result = Model.Result;
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">Rewards Calculator</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1">Credit Card Rewards & Net Return Calculator</h1>
+        <p class="text-white-50 small mb-0">Simulate exact cashback, reward points, monthly caps, and fee waivers based on actual card rules</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <!-- Card Selector Top Bar -->
+    <div class="cc-surface-card p-3 mb-4 shadow-sm">
+        <form method="get" asp-action="Index" class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-dark mb-0">Select Credit Card:</label>
+            </div>
+            <div class="col-md-7">
+                <select name="cardId" class="form-select form-select-lg" onchange="this.form.submit()">
+                    @foreach (var c in Model.AvailableCards)
+                    {
+                        <option value="@c.Id" selected="@(c.Id == card?.Id)">
+                            @(c.Bank?.Name) — @c.Name (@(c.AnnualFee == 0 ? "Lifetime Free" : "Fee: ₹" + c.AnnualFee.ToString("N0")))
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                @if (card != null)
+                {
+                    <a asp-controller="Cards" asp-action="Details" asp-route-slug="@card.Slug" class="btn btn-outline-dark w-100">
+                        View Terms <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    @if (card != null && result != null)
+    {
+        <div class="row g-4">
+            <!-- Left: Category Spends Input Sliders -->
+            <div class="col-lg-6">
+                <div class="cc-surface-card p-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                        <h4 class="h5 fw-bold mb-0 text-dark"><i class="bi bi-sliders me-2 text-primary"></i> Monthly Spend Breakdown</h4>
+                        <div class="text-end">
+                            <span class="small text-muted d-block">Total Spend:</span>
+                            <span class="fw-bold fs-5 text-primary" id="ccTotalSpendDisplay">₹@Model.SpendInput.TotalMonthly.ToString("N0")</span>
+                        </div>
+                    </div>
+
+                    <form method="get" asp-action="Index">
+                        <input type="hidden" name="cardId" value="@card.Id" />
+
+                        <!-- Online Shopping -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Online Shopping (Amazon, Flipkart, etc.)</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtOnline">@Model.SpendInput.OnlineShopping.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numOnline" min="0" max="100000" step="1000" value="@Model.SpendInput.OnlineShopping" />
+                            <input type="hidden" name="OnlineShopping" id="numOnline" class="cc-spend-number" value="@Model.SpendInput.OnlineShopping" />
+                        </div>
+
+                        <!-- Grocery -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Grocery & Supermarket (BigBasket, Instamart)</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtGrocery">@Model.SpendInput.Grocery.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numGrocery" min="0" max="50000" step="1000" value="@Model.SpendInput.Grocery" />
+                            <input type="hidden" name="Grocery" id="numGrocery" class="cc-spend-number" value="@Model.SpendInput.Grocery" />
+                        </div>
+
+                        <!-- Dining -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Dining & Food Delivery (Swiggy, Zomato)</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtDining">@Model.SpendInput.Dining.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numDining" min="0" max="40000" step="500" value="@Model.SpendInput.Dining" />
+                            <input type="hidden" name="Dining" id="numDining" class="cc-spend-number" value="@Model.SpendInput.Dining" />
+                        </div>
+
+                        <!-- Travel -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Travel, Flights & Hotels</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtTravel">@Model.SpendInput.Travel.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numTravel" min="0" max="60000" step="1000" value="@Model.SpendInput.Travel" />
+                            <input type="hidden" name="Travel" id="numTravel" class="cc-spend-number" value="@Model.SpendInput.Travel" />
+                        </div>
+
+                        <!-- Fuel -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Fuel & Petrol Pumps</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtFuel">@Model.SpendInput.Fuel.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numFuel" min="0" max="30000" step="500" value="@Model.SpendInput.Fuel" />
+                            <input type="hidden" name="Fuel" id="numFuel" class="cc-spend-number" value="@Model.SpendInput.Fuel" />
+                        </div>
+
+                        <!-- Utilities -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">Utilities & Mobile Recharges</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtUtil">@Model.SpendInput.Utilities.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numUtil" min="0" max="30000" step="500" value="@Model.SpendInput.Utilities" />
+                            <input type="hidden" name="Utilities" id="numUtil" class="cc-spend-number" value="@Model.SpendInput.Utilities" />
+                        </div>
+
+                        <!-- UPI & General -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-semibold text-dark mb-0">UPI Merchant Spends & General Retail</label>
+                                <span class="fw-bold text-dark small">₹<span id="txtGen">@Model.SpendInput.GeneralSpends.ToString("N0")</span></span>
+                            </div>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numGen" min="0" max="50000" step="1000" value="@Model.SpendInput.GeneralSpends" />
+                            <input type="hidden" name="GeneralSpends" id="numGen" class="cc-spend-number" value="@Model.SpendInput.GeneralSpends" />
+                        </div>
+
+                        <button type="submit" class="btn btn-cc-primary w-100 py-2">
+                            <i class="bi bi-arrow-repeat me-1"></i> Update Calculation
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Results & Returns Dashboard -->
+            <div class="col-lg-6">
+                <!-- Summary Metrics -->
+                <div class="cc-surface-card p-4 shadow-sm mb-4 highlight">
+                    <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">Estimated Financial Returns</h5>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center">
+                                <div class="small text-muted mb-1">Monthly Rewards</div>
+                                <div class="fw-bold fs-4 text-success">₹@result.MonthlyRewardsRupees.ToString("N0")</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center">
+                                <div class="small text-muted mb-1">Annual Rewards</div>
+                                <div class="fw-bold fs-4 text-success">₹@result.AnnualRewardsRupees.ToString("N0")</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center">
+                                <div class="small text-muted mb-1">Net 1st-Year Benefit</div>
+                                <div class="fw-bold fs-4 text-primary">₹@result.NetFirstYearBenefit.ToString("N0")</div>
+                                <div class="small text-muted">(Inc. Welcome Gift)</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded text-center">
+                                <div class="small text-muted mb-1">Net Renewal Benefit</div>
+                                <div class="fw-bold fs-4 text-primary">₹@result.NetRenewalYearBenefit.ToString("N0")</div>
+                                <div class="small text-muted">(After Annual Fee)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fee Waiver Indicator -->
+                    <div class="p-3 rounded mb-3 @(result.IsFeeWaived ? "bg-success bg-opacity-10 text-success" : "bg-warning bg-opacity-10 text-dark")">
+                        <div class="fw-bold small mb-1">
+                            <i class="bi @(result.IsFeeWaived ? "bi-check-circle-fill" : "bi-exclamation-circle-fill") me-1"></i>
+                            @(result.IsFeeWaived ? "Annual Fee Waived (100% Waiver)" : "Annual Fee Applies")
+                        </div>
+                        <div class="small">
+                            @(result.IsFeeWaived ? "Your simulated annual spend qualifies for full waiver of the ₹" + card.AnnualFee.ToString("N0") + " fee." : "Annual fee of ₹" + card.AnnualFee.ToString("N0") + " applies because spends are below the waiver threshold.")
+                        </div>
+                    </div>
+
+                    @if (result.AppliedCaps.Any())
+                    {
+                        <div class="p-3 bg-light rounded small text-muted">
+                            <strong class="text-danger"><i class="bi bi-shield-exclamation me-1"></i> Caps Triggered:</strong>
+                            <ul class="mb-0 ps-3 mt-1">
+                                @foreach (var cap in result.AppliedCaps)
+                                {
+                                    <li>@cap</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </div>
+
+                <!-- Category Breakdown Table -->
+                <div class="cc-surface-card p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-3 pb-2 border-bottom">Category Breakdown</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Spend/mo</th>
+                                    <th class="text-end">Return %</th>
+                                    <th class="text-end">Monthly Value</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                @foreach (var cat in result.CategoryDetails)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-dark">@cat.Category.ToString()</td>
+                                        <td class="text-end text-muted">₹@cat.MonthlySpend.ToString("N0")</td>
+                                        <td class="text-end text-primary fw-bold">@cat.EffectiveRatePercent.ToString("0.##")%</td>
+                                        <td class="text-end fw-bold text-success">
+                                            ₹@cat.MonthlyEarnedRupees.ToString("N0")
+                                            @if (cat.CapReached)
+                                            {
+                                                <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">Capped</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Disclosures -->
+                <div class="cc-surface-card p-3 bg-light border-0 small text-muted">
+                    <i class="bi bi-info-circle me-1 text-primary"></i> <strong>Mathematical Assumptions:</strong>
+                    Calculations reflect published merchant rules and optimal redemption value against flights, statements, or brand vouchers. Excludes taxes, fuel surcharges, late payment interest, and excluded merchant categories.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sliders = document.querySelectorAll('.cc-spend-slider');
+            sliders.forEach(s => {
+                const targetInput = document.getElementById(s.getAttribute('data-target-input'));
+                const labelText = s.parentElement.querySelector('span[id^="txt"]');
+
+                s.addEventListener('input', function () {
+                    if (targetInput) targetInput.value = this.value;
+                    if (labelText) labelText.textContent = Number(this.value).toLocaleString('en-IN');
+                    updateTotal();
+                });
+            });
+
+            function updateTotal() {
+                let sum = 0;
+                document.querySelectorAll('.cc-spend-slider').forEach(sl => {
+                    sum += Number(sl.value) || 0;
+                });
+                const totalDisplay = document.getElementById('ccTotalSpendDisplay');
+                if (totalDisplay) totalDisplay.textContent = '₹' + sum.toLocaleString('en-IN');
+            }
+        });
+    </script>
+}

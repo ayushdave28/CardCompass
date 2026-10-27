@@ -1,0 +1,323 @@
+@model CardCompass.Web.Models.ViewModels.RecommendationWizardViewModel
+@{
+    ViewData["Title"] = "Personalized Credit Card Recommendation Wizard";
+    var allCards = ViewBag.AllCards as List<CardCompass.Web.Models.Entities.CreditCard> ?? new List<CardCompass.Web.Models.Entities.CreditCard>();
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-1">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">Recommendation Wizard</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1">Credit Card Recommendation Wizard</h1>
+        <p class="text-white-50 small mb-0">Deterministic matching algorithm that pairs your exact spending breakdown with the highest net financial benefit</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- Left: Multi-step Questionnaire Form -->
+        <div class="col-lg-4">
+            <div class="cc-surface-card p-4 shadow-sm sticky-top" style="top: 80px; z-index: 10;">
+                <h4 class="h5 fw-bold mb-3 text-dark"><i class="bi bi-person-lines-fill me-2 text-primary"></i> Your Profile & Spends</h4>
+
+                <form asp-action="Calculate" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- 1. Income & Employment -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Net Monthly Income (₹)</label>
+                        <div class="input-group input-group-sm mb-1">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" asp-for="MonthlyIncome" class="form-control" step="5000" min="15000" max="10000000" required />
+                        </div>
+                        <span class="text-muted small">Used for eligibility checks. Not shared with third parties.</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Employment Status</label>
+                        <select asp-for="EmploymentType" class="form-select form-select-sm">
+                            <option value="Salaried">Salaried Professional</option>
+                            <option value="SelfEmployed">Self-Employed / Business Owner</option>
+                            <option value="Student">Student / First Job</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Feature Preferences -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Annual Fee Preference</label>
+                        <select asp-for="FeePreference" class="form-select form-select-sm">
+                            <option value="low_or_none">Lifetime Free or Low Fee (Recommended)</option>
+                            <option value="none">Strictly Lifetime Free Only (₹0)</option>
+                            <option value="any">Open to Premium Cards if rewards outweigh fees</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold d-block">Perks & Travel Priorities</label>
+                        <div class="form-check form-check-sm mb-1">
+                            <input class="form-check-input" type="checkbox" asp-for="RequiresLoungeAccess" id="loungePref" />
+                            <label class="form-check-label small" for="loungePref">Need Airport Lounge Access</label>
+                        </div>
+                        <div class="form-check form-check-sm mb-1">
+                            <input class="form-check-input" type="checkbox" asp-for="PrefersRuPayUPI" id="rupayPref" />
+                            <label class="form-check-label small" for="rupayPref">Want RuPay UPI Linking</label>
+                        </div>
+                        <div class="form-check form-check-sm">
+                            <input class="form-check-input" type="checkbox" asp-for="InternationalTraveler" id="intlPref" />
+                            <label class="form-check-label small" for="intlPref">Low Forex Markup (Travel abroad)</label>
+                        </div>
+                    </div>
+
+                    <!-- 3. Monthly Category Spends -->
+                    <div class="border-top pt-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-dark">Estimated Monthly Spending</span>
+                            <span class="badge bg-primary rounded-pill" id="wizardTotalDisplay">₹0</span>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Online Shopping</span>
+                                <span class="fw-bold text-dark">₹<span id="txtOnline">@Model.Spending.OnlineShopping</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numOnline" min="0" max="100000" step="1000" value="@Model.Spending.OnlineShopping" />
+                            <input type="hidden" asp-for="Spending.OnlineShopping" id="numOnline" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Groceries & Supermarkets</span>
+                                <span class="fw-bold text-dark">₹<span id="txtGrocery">@Model.Spending.Grocery</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numGrocery" min="0" max="60000" step="1000" value="@Model.Spending.Grocery" />
+                            <input type="hidden" asp-for="Spending.Grocery" id="numGrocery" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Dining & Food Delivery</span>
+                                <span class="fw-bold text-dark">₹<span id="txtDining">@Model.Spending.Dining</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numDining" min="0" max="40000" step="500" value="@Model.Spending.Dining" />
+                            <input type="hidden" asp-for="Spending.Dining" id="numDining" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Travel & Flights</span>
+                                <span class="fw-bold text-dark">₹<span id="txtTravel">@Model.Spending.Travel</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numTravel" min="0" max="80000" step="1000" value="@Model.Spending.Travel" />
+                            <input type="hidden" asp-for="Spending.Travel" id="numTravel" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Fuel</span>
+                                <span class="fw-bold text-dark">₹<span id="txtFuel">@Model.Spending.Fuel</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numFuel" min="0" max="30000" step="500" value="@Model.Spending.Fuel" />
+                            <input type="hidden" asp-for="Spending.Fuel" id="numFuel" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>Utilities & Mobile</span>
+                                <span class="fw-bold text-dark">₹<span id="txtUtil">@Model.Spending.Utilities</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numUtil" min="0" max="30000" step="500" value="@Model.Spending.Utilities" />
+                            <input type="hidden" asp-for="Spending.Utilities" id="numUtil" class="cc-spend-number" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted d-flex justify-content-between">
+                                <span>UPI & General Retail</span>
+                                <span class="fw-bold text-dark">₹<span id="txtGen">@Model.Spending.GeneralSpends</span></span>
+                            </label>
+                            <input type="range" class="form-range cc-spend-slider" data-target-input="numGen" min="0" max="50000" step="1000" value="@Model.Spending.GeneralSpends" />
+                            <input type="hidden" asp-for="Spending.GeneralSpends" id="numGen" class="cc-spend-number" />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-cc-primary w-100 py-2">
+                        Calculate Recommendations <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right: Ranked Recommendation Cards -->
+        <div class="col-lg-8">
+            @if (Model.HasCalculated && Model.Recommendations.Any())
+            {
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="h4 fw-bold mb-1 text-dark">Top @Model.Recommendations.Count Recommended Cards</h2>
+                        <p class="text-muted small mb-0">Ranked by estimated annual net financial return for your spending habits</p>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                        <i class="bi bi-check2-circle me-1"></i> Ranked by Net Return
+                    </span>
+                </div>
+
+                <div class="d-flex flex-column gap-4">
+                    @for (int i = 0; i < Model.Recommendations.Count; i++)
+                    {
+                        var rec = Model.Recommendations[i];
+                        var card = rec.Card;
+                        var calc = rec.Calculation;
+                        var rank = i + 1;
+
+                        <div class="cc-surface-card p-4 shadow-sm @(rank == 1 ? "highlight" : "") position-relative">
+                            @if (rank == 1)
+                            {
+                                <div class="position-absolute top-0 end-0 mt-3 me-3">
+                                    <span class="badge bg-success px-3 py-2 fs-6 shadow-sm">
+                                        <i class="bi bi-trophy-fill me-1"></i> Top Match #1
+                                    </span>
+                                </div>
+                            }
+
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-5">
+                                    <div class="cc-card-art w-100" style="background: @card.CardGradient; max-width: 320px;">
+                                        <div class="cc-card-top">
+                                            <div class="cc-card-bank"><i class="bi bi-bank"></i> @(card.Bank?.Name ?? "Bank")</div>
+                                            <div class="cc-contactless-icon"><i class="bi bi-reception-4"></i></div>
+                                        </div>
+                                        <div class="cc-card-middle">
+                                            <div class="cc-emv-chip @(card.ChipColor == "silver" ? "silver" : "")"></div>
+                                            @if (card.RuPaySupported)
+                                            {
+                                                <span class="badge bg-light text-dark fw-bold small"><i class="bi bi-qr-code-scan"></i> UPI</span>
+                                            }
+                                        </div>
+                                        <div class="cc-card-bottom">
+                                            <div>
+                                                <div class="cc-card-tier">@card.Category.ToString()</div>
+                                                <div class="cc-card-name fs-6">@card.Name</div>
+                                            </div>
+                                            <div class="cc-network-badge">@card.Network.ToString()</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-7">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">#@rank Match</span>
+                                        <span class="badge @(rec.EligibilityStatus == "Likely Eligible" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning")">
+                                            @rec.EligibilityStatus
+                                        </span>
+                                    </div>
+
+                                    <h4 class="h5 fw-bold mb-1 text-dark">@card.Name</h4>
+                                    <p class="small text-muted mb-3">@(card.Bank?.Name) • @(card.AnnualFee == 0 ? "Lifetime Free" : "Fee: ₹" + card.AnnualFee.ToString("N0") + "/yr")</p>
+
+                                    <!-- Returns Grid -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <div class="small text-muted">Est. Annual Rewards</div>
+                                                <div class="fw-bold text-success fs-5">₹@calc.AnnualRewardsRupees.ToString("N0")</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 bg-light rounded">
+                                                <div class="small text-muted">Net Annual Benefit</div>
+                                                <div class="fw-bold text-primary fs-5">₹@calc.NetRenewalYearBenefit.ToString("N0")</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Why it matches -->
+                                    <div class="mb-3">
+                                        <div class="small fw-bold text-dark mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Why this card matches your profile:</div>
+                                        <ul class="list-unstyled small text-muted mb-0">
+                                            @foreach (var reason in rec.MatchReasons)
+                                            {
+                                                <li class="mb-1 d-flex align-items-start">
+                                                    <i class="bi bi-arrow-right-short text-success me-1 mt-1"></i>
+                                                    <span>@reason</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+
+                                    @if (rec.Limitations.Any())
+                                    {
+                                        <div class="small text-muted bg-warning bg-opacity-10 p-2 rounded mb-3">
+                                            <strong class="text-warning-emphasis"><i class="bi bi-exclamation-circle me-1"></i> Important Disclosures:</strong>
+                                            @string.Join(" ", rec.Limitations)
+                                        </div>
+                                    }
+
+                                    <div class="d-flex gap-2 pt-2 border-top">
+                                        <a asp-controller="Cards" asp-action="Details" asp-route-slug="@card.Slug" class="btn btn-sm btn-cc-outline-dark">
+                                            Full Card Details
+                                        </a>
+                                        <a href="/Compare?ids=@card.Id" class="btn btn-sm btn-outline-secondary">
+                                            Compare
+                                        </a>
+                                        @if (!string.IsNullOrEmpty(card.OfficialProductUrl))
+                                        {
+                                            <a href="@card.OfficialProductUrl" target="_blank" rel="noopener" class="btn btn-sm btn-cc-primary ms-auto">
+                                                Apply on Bank Portal <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="cc-surface-card p-5 text-center my-4">
+                    <div class="display-3 text-primary mb-3"><i class="bi bi-magic"></i></div>
+                    <h3 class="h4 fw-bold mb-2">Ready to Discover Your Best Credit Cards</h3>
+                    <p class="text-muted small mb-4" style="max-width: 500px; margin: 0 auto;">
+                        Fill in your approximate monthly spends on the left and click <strong>Calculate Recommendations</strong>. Our deterministic engine will compute your net financial return across all 30 cards.
+                    </p>
+                    <div class="d-inline-flex gap-3">
+                        <span class="badge bg-light text-dark p-2 border"><i class="bi bi-lock me-1"></i> No Credit Score Required</span>
+                        <span class="badge bg-light text-dark p-2 border"><i class="bi bi-shield-check me-1"></i> Zero Affiliate Bias</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const sliders = document.querySelectorAll('.cc-spend-slider');
+            sliders.forEach(s => {
+                const targetInput = document.getElementById(s.getAttribute('data-target-input'));
+                const labelText = s.parentElement.querySelector('span[id^="txt"]');
+
+                s.addEventListener('input', function () {
+                    if (targetInput) targetInput.value = this.value;
+                    if (labelText) labelText.textContent = Number(this.value).toLocaleString('en-IN');
+                    updateTotal();
+                });
+            });
+
+            function updateTotal() {
+                let sum = 0;
+                document.querySelectorAll('.cc-spend-slider').forEach(sl => {
+                    sum += Number(sl.value) || 0;
+                });
+                const totalBadge = document.getElementById('wizardTotalDisplay');
+                if (totalBadge) totalBadge.textContent = '₹' + sum.toLocaleString('en-IN') + '/mo';
+            }
+
+            updateTotal();
+        });
+    </script>
+}

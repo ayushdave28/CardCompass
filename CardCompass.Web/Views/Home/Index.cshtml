@@ -1,0 +1,474 @@
+@model CardCompass.Web.Models.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "Find The Best Credit Card For You";
+}
+
+<!-- Hero Section -->
+<section class="cc-hero">
+    <div class="container position-relative" style="z-index: 2;">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-10 text-white small mb-3 border border-white border-opacity-10">
+                    <span class="badge bg-info text-dark rounded-pill">RBI Grounded</span>
+                    <span>Transparent Indian Credit Card Intelligence</span>
+                </div>
+
+                <h1 class="cc-hero-title mb-3">
+                    Find the card that <br />
+                    <span class="cc-gradient-text">works for you.</span>
+                </h1>
+
+                <p class="cc-hero-subtitle mb-4">
+                    Cut through confusing fee waivers, complex reward caps, and hidden exclusions. Compare <strong>@Model.TotalCardsCount verified Indian credit cards</strong> from @Model.TotalBanksCount leading banks with deterministic mathematical calculations.
+                </p>
+
+                <!-- Quick Search Input -->
+                <form asp-controller="Cards" asp-action="Index" method="get" class="mb-4">
+                    <div class="p-1 bg-white rounded-pill shadow-lg d-flex align-items-center" style="max-width: 580px;">
+                        <div class="ps-3 text-muted">
+                            <i class="bi bi-search fs-5"></i>
+                        </div>
+                        <input type="text" name="searchQuery" class="form-control border-0 shadow-none ps-2" placeholder="Search by card name (e.g. Millennia, Regalia, Tata Neu, Swiggy)..." aria-label="Search cards" />
+                        <button type="submit" class="btn btn-cc-primary rounded-pill px-4">
+                            Explore
+                        </button>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <a asp-controller="Recommendation" asp-action="Index" class="btn btn-cc-emerald">
+                        <i class="bi bi-magic"></i> Find My Best Card
+                    </a>
+                    <a asp-controller="Compare" asp-action="Index" class="btn btn-cc-outline">
+                        <i class="bi bi-layout-split"></i> Compare Cards
+                    </a>
+                </div>
+
+                <!-- Metrics Strip -->
+                <div class="d-flex flex-wrap gap-4 mt-4 pt-3 border-top border-white border-opacity-10 text-white-50 small">
+                    <div>
+                        <strong class="text-white d-block fs-5">@Model.TotalCardsCount Cards</strong>
+                        <span>Researched & Sourced</span>
+                    </div>
+                    <div>
+                        <strong class="text-white d-block fs-5">@Model.TotalBanksCount Banks</strong>
+                        <span>HDFC, SBI, ICICI, Axis +</span>
+                    </div>
+                    <div>
+                        <strong class="text-white d-block fs-5">@Model.LifetimeFreeCount Cards</strong>
+                        <span>Zero Annual Fee</span>
+                    </div>
+                    <div>
+                        <strong class="text-white d-block fs-5">@Model.RuPayCount Cards</strong>
+                        <span>RuPay UPI Supported</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5 d-none d-lg-block">
+                <!-- Stacked Visual Credit Card Showcase -->
+                <div class="position-relative py-4" style="perspective: 1000px;">
+                    @if (Model.FeaturedCards.Count >= 2)
+                    {
+                        var topCard = Model.FeaturedCards[0];
+                        var secondCard = Model.FeaturedCards[1];
+
+                        <!-- Top Card Art -->
+                        <div class="cc-card-art mb-4" style="background: @topCard.CardGradient; transform: rotate(-3deg); box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+                            <div class="cc-card-top">
+                                <div class="cc-card-bank"><i class="bi bi-bank"></i> @topCard.Bank?.Name</div>
+                                <div class="cc-contactless-icon"><i class="bi bi-reception-4"></i></div>
+                            </div>
+                            <div class="cc-card-middle">
+                                <div class="cc-emv-chip @(topCard.ChipColor == "silver" ? "silver" : "")"></div>
+                                <span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="bi bi-star-fill me-1"></i> Featured</span>
+                            </div>
+                            <div class="cc-card-bottom">
+                                <div>
+                                    <div class="cc-card-tier">@topCard.Category.ToString()</div>
+                                    <div class="cc-card-name">@topCard.Name</div>
+                                </div>
+                                <div class="cc-network-badge">@topCard.Network.ToString()</div>
+                            </div>
+                        </div>
+
+                        <!-- Second Card Behind -->
+                        <div class="cc-card-art ms-4" style="background: @secondCard.CardGradient; transform: rotate(5deg) translateY(-40px); z-index: 0; opacity: 0.95;">
+                            <div class="cc-card-top">
+                                <div class="cc-card-bank"><i class="bi bi-bank"></i> @secondCard.Bank?.Name</div>
+                                <div class="cc-contactless-icon"><i class="bi bi-reception-4"></i></div>
+                            </div>
+                            <div class="cc-card-middle">
+                                <div class="cc-emv-chip @(secondCard.ChipColor == "silver" ? "silver" : "")"></div>
+                                @if (secondCard.RuPaySupported)
+                                {
+                                    <span class="badge bg-light text-dark fw-bold"><i class="bi bi-qr-code-scan"></i> UPI</span>
+                                }
+                            </div>
+                            <div class="cc-card-bottom">
+                                <div>
+                                    <div class="cc-card-tier">@secondCard.Category.ToString()</div>
+                                    <div class="cc-card-name">@secondCard.Name</div>
+                                </div>
+                                <div class="cc-network-badge">@secondCard.Network.ToString()</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Benefit Categories Filter Grid -->
+<section class="py-5 bg-white border-bottom">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h2 class="h3 fw-bold mb-1">Browse by Primary Benefit</h2>
+            <p class="text-muted small">Explore cards tailored for your primary spending habit</p>
+        </div>
+
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            <div class="col">
+                <a href="/Cards?category=Cashback" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary fs-4">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Cashback</div>
+                        <div class="small text-muted">Up to 5% online return</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?category=Travel" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-info bg-opacity-10 text-info fs-4">
+                        <i class="bi bi-airplane-engines"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Travel & Miles</div>
+                        <div class="small text-muted">Hotels, airfares & forex</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?ruPayOnly=true" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning fs-4">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">RuPay UPI</div>
+                        <div class="small text-muted">Scan & pay with credit</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?feeType=free" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success fs-4">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Lifetime Free</div>
+                        <div class="small text-muted">Zero annual fees</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?category=Shopping" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-danger bg-opacity-10 text-danger fs-4">
+                        <i class="bi bi-bag-check"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Online Shopping</div>
+                        <div class="small text-muted">Amazon, Flipkart & Myntra</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?category=Dining" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning fs-4">
+                        <i class="bi bi-cup-hot"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Food & Dining</div>
+                        <div class="small text-muted">Swiggy, Zomato & Dineout</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?category=Fuel" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-secondary bg-opacity-10 text-secondary fs-4">
+                        <i class="bi bi-fuel-pump"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Fuel Surcharge</div>
+                        <div class="small text-muted">BPCL, IndianOil, HPCL</div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col">
+                <a href="/Cards?loungeOnly=true" class="cc-surface-card d-flex align-items-center gap-3 p-3 text-dark text-decoration-none h-100">
+                    <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary fs-4">
+                        <i class="bi bi-door-open"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Lounge Access</div>
+                        <div class="small text-muted">Domestic & International</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Cards Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4">
+            <div>
+                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-1 mb-2">Editor's Picks</span>
+                <h2 class="h2 fw-bold mb-1">Featured Credit Cards in India</h2>
+                <p class="text-muted mb-0">Handpicked top performers across cashback, travel, and everyday spending</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a asp-controller="Cards" asp-action="Index" class="btn btn-cc-outline-dark">
+                    View All @Model.TotalCardsCount Cards <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            @foreach (var card in Model.FeaturedCards)
+            {
+                <div class="col-lg-4 col-md-6">
+                    <partial name="_CardItemPartial" model="card" />
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- How Recommendation Works -->
+<section class="py-5 bg-white border-top border-bottom">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1 mb-2">Deterministic Math</span>
+            <h2 class="h2 fw-bold mb-2">How Our Recommendation Engine Works</h2>
+            <p class="text-muted">
+                Unlike generic affiliate blogs that push cards with the highest commissions, CardCompass uses transparent backend financial simulations.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="cc-surface-card text-center p-4 h-100">
+                    <div class="cc-brand-icon mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-2">1. Your Real Spend Profile</h4>
+                    <p class="small text-muted mb-0">
+                        Tell us how much you spend monthly on groceries, online shopping, flights, dining, and fuel. No sensitive bank login required.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="cc-surface-card text-center p-4 h-100 highlight">
+                    <div class="cc-brand-icon mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem; background: linear-gradient(135deg, var(--cc-emerald), #047857);">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-2">2. Rules, Caps & Exclusions</h4>
+                    <p class="small text-muted mb-0">
+                        Our engine tests each card's published Schedule of Charges: category earning rates, monthly cashback caps, spend waiver rules, and point values.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="cc-surface-card text-center p-4 h-100">
+                    <div class="cc-brand-icon mx-auto mb-3" style="width: 54px; height: 54px; font-size: 1.6rem; background: linear-gradient(135deg, #6366f1, #4338ca);">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <h4 class="h5 fw-bold mb-2">3. Net Financial Ranking</h4>
+                    <p class="small text-muted mb-0">
+                        Cards are ranked by <strong>Estimated Net Annual Benefit</strong> (Rewards Earned minus Annual Fees). We disclose all caveats and assumptions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a asp-controller="Recommendation" asp-action="Index" class="btn btn-cc-primary px-4 py-2">
+                Launch Recommendation Wizard <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Comparison & Tools Highlights -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-1 mb-2">Decision Tools</span>
+                <h2 class="h2 fw-bold mb-3">Everything you need to master your credit cards</h2>
+                <p class="text-muted mb-4">
+                    Whether you are deciding on your next card application or choosing which card to swipe at checkout, our suite of calculators gives you instant clarity.
+                </p>
+
+                <div class="d-flex gap-3 mb-3">
+                    <div class="text-primary fs-3"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Side-by-Side 3-Card Comparison</h5>
+                        <p class="small text-muted mb-0">Compare fee waivers, category caps, foreign exchange markups, and lounge conditions with automatic category winner badges.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-3">
+                    <div class="text-success fs-3"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Interactive Rewards Calculator</h5>
+                        <p class="small text-muted mb-0">Adjust spending category sliders to simulate exact monthly and annual earnings, accounting for first-year vs renewal fees.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <div class="text-warning fs-3"><i class="bi bi-check2-circle"></i></div>
+                    <div>
+                        <h5 class="fw-bold mb-1">Instant Purchase Advisor</h5>
+                        <p class="small text-muted mb-0">Enter a single transaction amount (e.g. ₹25,000 on Amazon or ₹4,000 on Swiggy) to see which card in your wallet gives the highest return.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="cc-surface-card p-4 shadow">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <span class="fw-bold text-dark"><i class="bi bi-calculator me-1 text-primary"></i> Live Reward Simulation Preview</span>
+                        <span class="badge bg-success-subtle text-success">Verified Rates</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Monthly Spending: Online Shopping</label>
+                        <div class="fw-bold fs-5 text-dark">₹15,000 / month</div>
+                    </div>
+
+                    <div class="list-group list-group-flush mb-3">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">SBI Cashback Card</div>
+                                <div class="small text-muted">5% online cashback</div>
+                            </div>
+                            <span class="badge bg-success fs-6">₹750 / mo</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">HDFC Millennia</div>
+                                <div class="small text-muted">5% CashPoints (partner merchants)</div>
+                            </div>
+                            <span class="badge bg-primary fs-6">₹750 / mo</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-bold">Amazon Pay ICICI</div>
+                                <div class="small text-muted">5% unlimited on Amazon Prime</div>
+                            </div>
+                            <span class="badge bg-warning text-dark fs-6">₹750 / mo</span>
+                        </div>
+                    </div>
+
+                    <a asp-controller="Calculator" asp-action="Index" class="btn btn-cc-primary w-100 text-center">
+                        Try Full Interactive Calculator
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Frequently Asked Questions -->
+<section class="py-5 bg-white border-top">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-1 mb-2">FAQ</span>
+            <h2 class="h2 fw-bold mb-2">Frequently Asked Questions</h2>
+            <p class="text-muted">Answers to common questions about Indian credit cards and our calculations</p>
+        </div>
+
+        <div class="accordion max-w-800 mx-auto" id="faqAccordion">
+            <div class="accordion-item border-0 mb-3 cc-surface-card p-0">
+                <h2 class="accordion-header" id="faq1Heading">
+                    <button class="accordion-button fw-bold collapsed bg-transparent text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="false" aria-controls="faq1">
+                        How does CardCompass calculate reward values?
+                    </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse" aria-labelledby="faq1Heading" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted pt-0 small">
+                        We calculate rewards using the actual earning rules stored in our database for each specific card. If a card earns 5% cashback on online spends with a ₹1,000 monthly cap, our engine calculates the return up to the cap and drops subsequent spends to base rates. Point redemption values are based on verified redemption options (such as statement credit or flight bookings on bank portals).
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-3 cc-surface-card p-0">
+                <h2 class="accordion-header" id="faq2Heading">
+                    <button class="accordion-button fw-bold collapsed bg-transparent text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false" aria-controls="faq2">
+                        Are domestic airport lounges really complimentary?
+                    </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" aria-labelledby="faq2Heading" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted pt-0 small">
+                        In recent revisions (2024-2026), most major Indian banks (including HDFC, ICICI, and Axis) introduced spend-based criteria for domestic airport lounge access (typically requiring ₹35,000 to ₹50,000 retail spend in the preceding calendar quarter). CardCompass explicitly discloses these qualification conditions for every card.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-3 cc-surface-card p-0">
+                <h2 class="accordion-header" id="faq3Heading">
+                    <button class="accordion-button fw-bold collapsed bg-transparent text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false" aria-controls="faq3">
+                        Can I link any credit card to UPI apps?
+                    </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" aria-labelledby="faq3Heading" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted pt-0 small">
+                        Under NPCI regulations, only credit cards issued on the <strong>RuPay network</strong> can currently be linked to UPI apps (such as Google Pay, PhonePe, Paytm, or BHIM) for merchant QR code scan-and-pay transactions. Visa, Mastercard, and American Express cards cannot be linked to UPI apps directly.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border-0 mb-3 cc-surface-card p-0">
+                <h2 class="accordion-header" id="faq4Heading">
+                    <button class="accordion-button fw-bold collapsed bg-transparent text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false" aria-controls="faq4">
+                        Does CardCompass guarantee my credit card approval?
+                    </button>
+                </h2>
+                <div id="faq4" class="accordion-collapse collapse" aria-labelledby="faq4Heading" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted pt-0 small">
+                        No. CardCompass is an independent educational and comparison platform. We provide estimates and match scores based on published eligibility criteria. Credit card issuance, credit limits, and final underwriting decisions are made exclusively by the issuing banks.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section class="py-5" style="background: radial-gradient(circle at center, #1e3a8a 0%, #0a192f 100%); color: white;">
+    <div class="container text-center py-4">
+        <h2 class="h1 fw-bold mb-3 text-white">Ready to find your best credit card?</h2>
+        <p class="text-white-50 mb-4 fs-5" style="max-width: 650px; margin: 0 auto;">
+            Answer a few quick questions about your spending and get an instant, math-backed recommendation.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a asp-controller="Recommendation" asp-action="Index" class="btn btn-cc-primary px-4 py-2 fs-5">
+                Start Recommendation Wizard <i class="bi bi-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,414 @@
+@model CardCompass.Web.Models.ViewModels.CardComparisonViewModel
+@using Microsoft.AspNetCore.Identity
+@using CardCompass.Web.Models.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+
+@{
+    ViewData["Title"] = "Side-by-Side Credit Card Comparison";
+    var allCards = ViewBag.AllCards as List<CreditCard> ?? new List<CreditCard>();
+    var cardIdsStr = string.Join(",", Model.Cards.Select(c => c.Id));
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small mb-1">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                        <li class="breadcrumb-item active text-white" aria-current="page">Compare Cards</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold mb-1">Side-by-Side Credit Card Comparison</h1>
+                <p class="text-white-50 small mb-0">Compare up to 3 Indian credit cards with real-world spending simulation</p>
+            </div>
+
+            <div class="d-flex gap-2">
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#saveCompareModal">
+                        <i class="bi bi-bookmark-plus me-1"></i> Save Comparison
+                    </button>
+                }
+                <button type="button" class="btn btn-sm btn-cc-primary" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                    <i class="bi bi-plus-circle me-1"></i> Add / Swap Card
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    @if (!Model.Cards.Any())
+    {
+        <div class="cc-surface-card p-5 text-center my-4">
+            <h3 class="h4 fw-bold mb-2">No Cards Selected for Comparison</h3>
+            <p class="text-muted small mb-4">Choose up to 3 cards from our directory to compare fees, reward caps, and net returns.</p>
+            <a asp-controller="Cards" asp-action="Index" class="btn btn-cc-primary">Browse All Cards</a>
+        </div>
+    }
+    else
+    {
+        <!-- Comparison Matrix Table -->
+        <div class="cc-surface-card p-0 shadow-sm overflow-hidden mb-5">
+            <div class="table-responsive">
+                <table class="table table-bordered cc-compare-table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 220px;" class="align-middle">
+                                <span class="fs-6 fw-bold">Card Specifications</span>
+                            </th>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <th class="text-center" style="min-width: 250px;">
+                                    <!-- Mini Card Art -->
+                                    <div class="cc-card-art mx-auto mb-2" style="background: @card.CardGradient; height: 120px; padding: 0.8rem; aspect-ratio: auto;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="small fw-bold text-uppercase">@(card.Bank?.Name ?? "Bank")</span>
+                                            <span class="badge bg-light text-dark small">@card.Network.ToString()</span>
+                                        </div>
+                                        <div class="text-start mt-auto">
+                                            <div class="fw-bold text-white small">@card.Name</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="fw-bold text-white mb-1">@card.Name</div>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a asp-controller="Cards" asp-action="Details" asp-route-slug="@card.Slug" class="btn btn-xs btn-outline-light py-0 px-2 small">
+                                            Details
+                                        </a>
+                                        @{
+                                            var removeIds = Model.Cards.Where(c => c.Id != card.Id).Select(c => c.Id);
+                                            var removeUrl = $"/Compare?ids={string.Join(",", removeIds)}";
+                                        }
+                                        <a href="@removeUrl" class="btn btn-xs btn-outline-danger py-0 px-2 small" title="Remove from comparison">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Category Winner Badges Row -->
+                        <tr class="table-light">
+                            <td class="fw-bold text-dark"><i class="bi bi-award-fill text-warning me-1"></i> Best Categories</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                var wonCategories = Model.CategoryWinners.Where(w => w.Value == card.Id).Select(w => w.Key).ToList();
+                                <td>
+                                    @if (wonCategories.Any())
+                                    {
+                                        foreach (var cat in wonCategories)
+                                        {
+                                            <span class="badge bg-success mb-1 d-block text-truncate">
+                                                <i class="bi bi-check2 me-1"></i> @cat Winner
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Standard tier</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Fees & Charges -->
+                        <tr>
+                            <td class="fw-bold text-dark">Joining Fee</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td class="text-center @(card.JoiningFee == 0 ? "cc-winner-cell" : "")">
+                                    <div class="fw-bold">@(card.JoiningFee == 0 ? "₹0 (Free)" : "₹" + card.JoiningFee.ToString("N0"))</div>
+                                    <div class="small text-muted">+ 18% GST</div>
+                                </td>
+                            }
+                        </tr>
+
+                        <tr>
+                            <td class="fw-bold text-dark">Annual Renewal Fee</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td class="text-center @(card.AnnualFee == 0 ? "cc-winner-cell" : "")">
+                                    <div class="fw-bold fs-6">@(card.AnnualFee == 0 ? "₹0 (Lifetime Free)" : "₹" + card.AnnualFee.ToString("N0"))</div>
+                                    <div class="small text-muted">+ 18% GST</div>
+                                </td>
+                            }
+                        </tr>
+
+                        <tr>
+                            <td class="fw-bold text-dark">Fee Waiver Spend Condition</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td>
+                                    <div class="small text-muted">
+                                        @(string.IsNullOrEmpty(card.FeeWaiverDescription) ? "No published fee waiver" : card.FeeWaiverDescription)
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Airport Lounge Access -->
+                        <tr>
+                            <td class="fw-bold text-dark">Airport Lounge Access</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                var totalLounge = card.LoungeAccessDomestic + card.LoungeAccessInternational;
+                                <td class="@(totalLounge >= 16 ? "cc-winner-cell" : "")">
+                                    <div class="fw-bold text-dark">
+                                        @(card.LoungeAccessDomestic >= 999 ? "Unlimited" : card.LoungeAccessDomestic.ToString()) Domestic
+                                        / @(card.LoungeAccessInternational >= 999 ? "Unlimited" : card.LoungeAccessInternational.ToString()) Intl
+                                    </div>
+                                    <div class="small text-muted mt-1">@card.LoungeDetails</div>
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Forex Markup -->
+                        <tr>
+                            <td class="fw-bold text-dark">Foreign Currency Markup</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td class="text-center @(card.ForexMarkupPercent <= 2.0m ? "cc-winner-cell" : "")">
+                                    <div class="fw-bold fs-6">@card.ForexMarkupPercent.ToString("0.##")%</div>
+                                    @if (card.ForexMarkupPercent <= 2.0m)
+                                    {
+                                        <span class="badge bg-info-subtle text-info small">Low Forex Tier</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- RuPay UPI -->
+                        <tr>
+                            <td class="fw-bold text-dark">RuPay / UPI QR Support</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td class="text-center @(card.RuPaySupported ? "cc-winner-cell" : "")">
+                                    @if (card.RuPaySupported)
+                                    {
+                                        <span class="badge bg-success-subtle text-success fs-6"><i class="bi bi-check-circle-fill me-1"></i> Supported</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Not Supported</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Minimum Income Required -->
+                        <tr>
+                            <td class="fw-bold text-dark">Published Eligibility</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td>
+                                    <div class="fw-bold small">Min Income: ₹@card.MinimumIncomeMonthly.ToString("N0")/mo</div>
+                                    <div class="small text-muted">@card.PublishedEligibility</div>
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Return Simulation Heading Row -->
+                        <tr class="table-primary text-dark">
+                            <td colspan="@(Model.Cards.Count + 1)" class="fw-bold py-2">
+                                <i class="bi bi-calculator me-1"></i> Simulated Net Financial Benefit (Based on Monthly Spend of ₹@Model.SpendingProfile.TotalMonthlySpend.ToString("N0"))
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="fw-bold text-dark">Annual Rewards Value</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                var calc = Model.CardCalculations[card.Id];
+                                <td class="text-center">
+                                    <div class="fw-bold fs-5 text-success">₹@calc.AnnualRewardsRupees.ToString("N0")</div>
+                                    <div class="small text-muted">₹@calc.MonthlyRewardsRupees.ToString("N0") / month</div>
+                                </td>
+                            }
+                        </tr>
+
+                        <tr>
+                            <td class="fw-bold text-dark">Effective Annual Fee</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                var calc = Model.CardCalculations[card.Id];
+                                <td class="text-center">
+                                    <div class="fw-bold @(calc.IsFeeWaived ? "text-success" : "text-danger")">
+                                        @(calc.IsFeeWaived ? "₹0 (Waived)" : "₹" + calc.EffectiveAnnualFee.ToString("N0"))
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+
+                        <tr class="table-light">
+                            <td class="fw-bold text-dark">Net Renewal Year Benefit</td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                var calc = Model.CardCalculations[card.Id];
+                                var isWinner = Model.CategoryWinners.TryGetValue("Net Financial Benefit", out var winnerId) && winnerId == card.Id;
+                                <td class="text-center @(isWinner ? "cc-winner-cell" : "")">
+                                    <div class="fw-bold fs-4 text-primary">₹@calc.NetRenewalYearBenefit.ToString("N0")</div>
+                                    @if (isWinner)
+                                    {
+                                        <span class="badge bg-success small"><i class="bi bi-trophy-fill me-1"></i> Highest Net Benefit</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+
+                        <!-- Apply Button Row -->
+                        <tr>
+                            <td></td>
+                            @foreach (var card in Model.Cards)
+                            {
+                                <td class="text-center">
+                                    <a href="@card.OfficialProductUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-cc-primary w-100">
+                                        Apply on Bank Site <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                    </a>
+                                </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Interactive Spend Simulator Controls -->
+        <div class="cc-surface-card p-4 shadow-sm mb-4">
+            <h4 class="h5 fw-bold mb-1 text-dark"><i class="bi bi-sliders me-2 text-primary"></i> Live Comparison Spend Simulator</h4>
+            <p class="small text-muted mb-4">Adjust monthly category spends below to recalculate simulated rewards and fee waivers in real time</p>
+
+            <form method="get" asp-action="Index">
+                <input type="hidden" name="ids" value="@cardIdsStr" />
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Online Shopping (Amazon, Flipkart, Myntra)</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="OnlineShoppingMonthly" value="@Model.SpendingProfile.OnlineShoppingMonthly" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Grocery & Supermarket</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="GroceryMonthly" value="@Model.SpendingProfile.GroceryMonthly" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Dining & Food Delivery (Swiggy, Zomato)</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="DiningMonthly" value="@Model.SpendingProfile.DiningMonthly" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Travel, Flights & Hotels</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="TravelMonthly" value="@Model.SpendingProfile.TravelMonthly" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Fuel & Petrol Pumps</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="FuelMonthly" value="@Model.SpendingProfile.FuelMonthly" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Utilities & Mobile Recharges</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" name="UtilitiesMonthly" value="@Model.SpendingProfile.UtilitiesMonthly" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-cc-primary">
+                        <i class="bi bi-arrow-repeat me-1"></i> Recalculate Comparison Returns
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>
+
+<!-- Modal: Add or Replace Card -->
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-labelledby="addCardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="addCardModalLabel">Select a Card to Compare</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted mb-3">Choose any card from our database to add to your side-by-side comparison (up to 3 cards):</p>
+                <div class="row row-cols-1 row-cols-md-2 g-3" style="max-height: 400px; overflow-y: auto;">
+                    @foreach (var c in allCards)
+                    {
+                        var isCurrentlyCompared = Model.Cards.Any(card => card.Id == c.Id);
+                        <div class="col">
+                            <div class="p-3 border rounded d-flex justify-content-between align-items-center @(isCurrentlyCompared ? "bg-light" : "")">
+                                <div>
+                                    <div class="fw-bold small">@c.Name</div>
+                                    <div class="small text-muted">@(c.Bank?.Name) • @(c.AnnualFee == 0 ? "Lifetime Free" : "₹" + c.AnnualFee.ToString("N0"))</div>
+                                </div>
+                                @if (isCurrentlyCompared)
+                                {
+                                    <span class="badge bg-secondary">Selected</span>
+                                }
+                                else
+                                {
+                                    var newIds = Model.Cards.Select(card => card.Id).Take(2).Append(c.Id);
+                                    <a href="/Compare?ids=@string.Join(",", newIds)" class="btn btn-sm btn-outline-primary">
+                                        Select
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Save Comparison -->
+@if (SignInManager.IsSignedIn(User))
+{
+    <div class="modal fade" id="saveCompareModal" tabindex="-1" aria-labelledby="saveCompareModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form asp-action="SaveComparison" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="cardIds" value="@cardIdsStr" />
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="saveCompareModalLabel">Save Comparison</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Comparison Title</label>
+                            <input type="text" name="title" class="form-control" value="Comparison: @string.Join(" vs ", Model.Cards.Select(c => c.Name))" required />
+                        </div>
+                        <p class="small text-muted mb-0">This comparison will be pinned to your Personal Dashboard for quick reference anytime.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cc-primary">Save to Dashboard</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

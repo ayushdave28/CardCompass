@@ -1,0 +1,176 @@
+@model CardCompass.Web.Models.Entities.CreditCard
+@{
+    ViewData["Title"] = "Add New Credit Card";
+    var banks = ViewBag.Banks as List<CardCompass.Web.Models.Entities.Bank> ?? new List<CardCompass.Web.Models.Entities.Bank>();
+}
+
+<div class="container py-5">
+    <div class="max-w-900 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left me-1"></i> Back to Admin</a>
+                <h1 class="h3 fw-bold mb-0">Add New Credit Card</h1>
+            </div>
+        </div>
+
+        <div class="cc-surface-card p-4 shadow-sm">
+            <form asp-action="CreateCard" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Card Product Name</label>
+                        <input asp-for="Name" class="form-control" placeholder="e.g. HDFC Regalia Gold" required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Issuing Bank</label>
+                        <select asp-for="BankId" class="form-select" required>
+                            <option value="">-- Select Bank --</option>
+                            @foreach (var bank in banks)
+                            {
+                                <option value="@bank.Id">@bank.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Network</label>
+                        <select asp-for="Network" class="form-select">
+                            @foreach (CardCompass.Web.Models.Entities.CardNetwork net in Enum.GetValues(typeof(CardCompass.Web.Models.Entities.CardNetwork)))
+                            {
+                                <option value="@net">@net.ToString()</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Category</label>
+                        <select asp-for="Category" class="form-select">
+                            @foreach (CardCompass.Web.Models.Entities.CardCategory cat in Enum.GetValues(typeof(CardCompass.Web.Models.Entities.CardCategory)))
+                            {
+                                <option value="@cat">@cat.ToString()</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">URL Slug (Optional)</label>
+                        <input asp-for="Slug" class="form-control" placeholder="auto-generated if empty" />
+                    </div>
+
+                    <!-- Fees & Waiver -->
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Joining Fee (₹)</label>
+                        <input asp-for="JoiningFee" class="form-control" type="number" step="1" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Annual Renewal Fee (₹)</label>
+                        <input asp-for="AnnualFee" class="form-control" type="number" step="1" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Waiver Spend Threshold (₹)</label>
+                        <input asp-for="FeeWaiverSpendThreshold" class="form-control" type="number" step="1000" placeholder="e.g. 200000" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Fee Waiver Description</label>
+                        <input asp-for="FeeWaiverDescription" class="form-control" placeholder="e.g. Waived on spends of ₹2,00,000 in preceding year" />
+                    </div>
+
+                    <!-- Lounges & Forex -->
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Domestic Lounge Visits / yr</label>
+                        <input asp-for="LoungeAccessDomestic" class="form-control" type="number" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Intl Lounge Visits / yr</label>
+                        <input asp-for="LoungeAccessInternational" class="form-control" type="number" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Forex Markup %</label>
+                        <input asp-for="ForexMarkupPercent" class="form-control" type="number" step="0.01" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Lounge Qualification Condition</label>
+                        <input asp-for="LoungeDetails" class="form-control" placeholder="e.g. Subject to ₹50,000 spend in preceding calendar quarter" />
+                    </div>
+
+                    <!-- Welcome & Eligibility -->
+                    <div class="col-md-8">
+                        <label class="form-label small fw-semibold">Welcome Benefit Description</label>
+                        <input asp-for="WelcomeBonus" class="form-control" placeholder="e.g. ₹1,000 voucher on 1st transaction" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Welcome Bonus Value (₹)</label>
+                        <input asp-for="WelcomeBonusMonetaryValue" class="form-control" type="number" step="1" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Min Monthly Income (₹)</label>
+                        <input asp-for="MinimumIncomeMonthly" class="form-control" type="number" step="5000" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label small fw-semibold">Published Eligibility Notes</label>
+                        <input asp-for="PublishedEligibility" class="form-control" placeholder="e.g. Salaried gross monthly income > ₹35,000" />
+                    </div>
+
+                    <!-- Pros and Cons -->
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Pros (Pipe separated: Advantage 1 | Advantage 2)</label>
+                        <textarea asp-for="Pros" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Cons (Pipe separated: Con 1 | Con 2)</label>
+                        <textarea asp-for="Cons" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <!-- Official URL & Design -->
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Official Product URL (Bank Portal)</label>
+                        <input asp-for="OfficialProductUrl" class="form-control" placeholder="https://bank.com/cards/..." />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Card CSS Gradient</label>
+                        <input asp-for="CardGradient" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Chip Color</label>
+                        <select asp-for="ChipColor" class="form-select">
+                            <option value="gold">Gold</option>
+                            <option value="silver">Silver</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-center gap-3 pt-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="RuPaySupported" id="chkRuPayCreate" />
+                            <label class="form-check-label small" for="chkRuPayCreate">RuPay UPI</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" asp-for="IsFeatured" id="chkFeatCreate" />
+                            <label class="form-check-label small" for="chkFeatCreate">Featured</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-light">Cancel</a>
+                    <button type="submit" class="btn btn-cc-primary">Save Credit Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,330 @@
+@model CardCompass.Web.Models.ViewModels.CardDetailViewModel
+@{
+    var card = Model.Card;
+    ViewData["Title"] = $"{card.Name} Review & Verified Benefits";
+    var calc = Model.EstimatedAnnualRewardsDefault;
+}
+
+<div class="bg-dark text-white py-4 border-bottom mb-4" style="background: linear-gradient(135deg, #0A192F 0%, #152A4A 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small mb-2">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Cards" asp-action="Index" class="text-white-50">Cards Directory</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">@card.Name</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <span class="badge bg-primary bg-opacity-25 text-info px-3 py-1 mb-2">
+                    <i class="bi bi-bank me-1"></i> @(card.Bank?.Name ?? "Bank")
+                </span>
+                <h1 class="h2 fw-bold text-white mb-1">@card.Name</h1>
+                <div class="d-flex flex-wrap gap-2 text-white-50 small">
+                    <span><i class="bi bi-credit-card-2-front me-1"></i> @card.Network.ToString()</span>
+                    <span>•</span>
+                    <span><i class="bi bi-tag me-1"></i> @card.Category.ToString() Tier</span>
+                    <span>•</span>
+                    <span><i class="bi bi-patch-check me-1 text-success"></i> Verified: @card.SourceVerifiedDate.ToString("MMM yyyy")</span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-light btn-add-compare" data-card-id="@card.Id" data-card-name="@card.Name">
+                    <i class="bi bi-plus-lg me-1"></i> Add to Compare
+                </button>
+                <button type="button" class="btn btn-light btn-toggle-favorite @(Model.IsUserFavorite ? "text-danger" : "text-muted")" data-card-id="@card.Id">
+                    <i class="bi @(Model.IsUserFavorite ? "bi-heart-fill" : "bi-heart") fs-5"></i>
+                </button>
+                @if (!string.IsNullOrEmpty(card.OfficialProductUrl))
+                {
+                    <a href="@card.OfficialProductUrl" target="_blank" rel="noopener noreferrer" class="btn btn-cc-primary">
+                        Apply on Bank Portal <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- Left: Card Graphic & Key Financial Metrics -->
+        <div class="col-lg-5">
+            <!-- Realistic Card Art -->
+            <div class="cc-card-art w-100 mb-4 mx-auto" style="background: @card.CardGradient; max-width: 420px;">
+                <div class="cc-card-top">
+                    <div class="cc-card-bank"><i class="bi bi-bank"></i> @(card.Bank?.Name ?? "Bank")</div>
+                    <div class="cc-contactless-icon"><i class="bi bi-reception-4"></i></div>
+                </div>
+                <div class="cc-card-middle">
+                    <div class="cc-emv-chip @(card.ChipColor == "silver" ? "silver" : "")"></div>
+                    @if (card.RuPaySupported)
+                    {
+                        <span class="badge bg-light text-dark fw-bold"><i class="bi bi-qr-code-scan"></i> RuPay UPI</span>
+                    }
+                </div>
+                <div class="cc-card-bottom">
+                    <div>
+                        <div class="cc-card-tier">@card.Category.ToString()</div>
+                        <div class="cc-card-name fs-5">@card.Name</div>
+                    </div>
+                    <div class="cc-network-badge">@card.Network.ToString()</div>
+                </div>
+            </div>
+
+            <!-- Key Financial Breakdown Card -->
+            <div class="cc-surface-card p-4 mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Schedule of Charges & Fees</h5>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="cc-stat-box">
+                            <div class="cc-stat-label">Joining Fee</div>
+                            <div class="fw-bold fs-5 text-dark">
+                                @(card.JoiningFee == 0 ? "₹0 (Free)" : "₹" + card.JoiningFee.ToString("N0") + " + GST")
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="cc-stat-box">
+                            <div class="cc-stat-label">Annual Renewal Fee</div>
+                            <div class="fw-bold fs-5 text-dark">
+                                @(card.AnnualFee == 0 ? "₹0 (Free)" : "₹" + card.AnnualFee.ToString("N0") + " + GST")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="small fw-semibold text-dark mb-1"><i class="bi bi-arrow-repeat text-primary me-1"></i> Fee Waiver Spend Condition:</div>
+                    <div class="small text-muted bg-light p-2 rounded">
+                        @(string.IsNullOrEmpty(card.FeeWaiverDescription) ? "No published fee waiver condition." : card.FeeWaiverDescription)
+                    </div>
+                </div>
+
+                <div class="row g-2 small text-muted">
+                    <div class="col-6">
+                        <strong>Forex Markup:</strong> @card.ForexMarkupPercent.ToString("0.##")%
+                    </div>
+                    <div class="col-6">
+                        <strong>RuPay UPI:</strong> @(card.RuPaySupported ? "Supported" : "Not Supported")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Benefits -->
+            @if (!string.IsNullOrEmpty(card.WelcomeBonus))
+            {
+                <div class="cc-surface-card p-4 mb-4 bg-primary bg-opacity-10 border-primary border-opacity-25">
+                    <h5 class="fw-bold text-primary mb-2"><i class="bi bi-gift-fill me-2"></i> Welcome Benefit</h5>
+                    <p class="small text-dark mb-0">@card.WelcomeBonus</p>
+                    @if (card.WelcomeBonusMonetaryValue > 0)
+                    {
+                        <div class="small text-muted mt-2">
+                            Estimated Voucher / Points Value: <strong>₹@card.WelcomeBonusMonetaryValue.ToString("N0")</strong>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Airport Lounge Access Details -->
+            <div class="cc-surface-card p-4 mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-airplane-engines me-2 text-primary"></i> Airport Lounge Access</h5>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-muted">Domestic Lounges:</span>
+                    <span class="fw-bold text-dark">@(card.LoungeAccessDomestic >= 999 ? "Unlimited" : card.LoungeAccessDomestic.ToString() + " visits/year")</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="small text-muted">International Lounges:</span>
+                    <span class="fw-bold text-dark">@(card.LoungeAccessInternational >= 999 ? "Unlimited" : card.LoungeAccessInternational.ToString() + " visits/year")</span>
+                </div>
+                <div class="small text-muted bg-light p-2 rounded">
+                    <strong>Qualification terms:</strong> @(string.IsNullOrEmpty(card.LoungeDetails) ? "Subject to issuer terms." : card.LoungeDetails)
+                </div>
+            </div>
+
+            <!-- Published Eligibility -->
+            <div class="cc-surface-card p-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person-badge me-2 text-primary"></i> Published Eligibility</h5>
+                <div class="small text-muted mb-2">
+                    <strong>Minimum Monthly Income:</strong> ₹@card.MinimumIncomeMonthly.ToString("N0")
+                </div>
+                @if (card.Eligibility != null)
+                {
+                    <div class="small text-muted mb-2">
+                        <strong>Age Range:</strong> @card.Eligibility.MinAge - @card.Eligibility.MaxAge years
+                    </div>
+                    <div class="small text-muted mb-2">
+                        <strong>Suggested Credit Score:</strong> @card.Eligibility.SuggestedCreditScore+
+                    </div>
+                }
+                <div class="small text-muted bg-light p-2 rounded">
+                    @card.PublishedEligibility
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Verified Reward Rules & Return Simulation -->
+        <div class="col-lg-7">
+            <!-- Pros & Cons Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="cc-surface-card p-4 h-100 border-success border-opacity-25 bg-success bg-opacity-10">
+                        <h6 class="fw-bold text-success mb-3"><i class="bi bi-hand-thumbs-up-fill me-1"></i> Card Advantages (Pros)</h6>
+                        <ul class="list-unstyled small mb-0">
+                            @foreach (var pro in card.Pros.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                    <span class="text-dark">@pro</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="cc-surface-card p-4 h-100 border-danger border-opacity-25 bg-danger bg-opacity-10">
+                        <h6 class="fw-bold text-danger mb-3"><i class="bi bi-hand-thumbs-down-fill me-1"></i> Limitations (Cons)</h6>
+                        <ul class="list-unstyled small mb-0">
+                            @foreach (var con in card.Cons.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-x-circle text-danger me-2 mt-1"></i>
+                                    <span class="text-dark">@con</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reward Rules Detailed Table -->
+            <div class="cc-surface-card p-4 mb-4">
+                <h5 class="fw-bold mb-1">Category-Specific Reward Rates & Rules</h5>
+                <p class="small text-muted mb-3">Exact earning rules, caps, and point-to-rupee valuations stored in our verified database</p>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr class="small">
+                                <th>Category</th>
+                                <th>Reward Type</th>
+                                <th>Earning Rate</th>
+                                <th>Monthly Cap</th>
+                                <th>Notes / Exclusions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            @foreach (var rule in card.RewardRules)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-dark">@rule.Category.ToString()</td>
+                                    <td><span class="badge bg-light text-dark border">@rule.RewardType.ToString()</span></td>
+                                    <td class="text-primary fw-bold">
+                                        @if (rule.PointsPer100Rupees > 0)
+                                        {
+                                            <span>@rule.PointsPer100Rupees pts / ₹100</span>
+                                            <span class="text-muted d-block small">(1 pt = ₹@rule.PointRupeeValue.ToString("0.##"))</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@rule.EarningRatePercent.ToString("0.##")%</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @(rule.MonthlyCapRupees.HasValue ? "₹" + rule.MonthlyCapRupees.Value.ToString("N0") : "Uncapped")
+                                    </td>
+                                    <td class="text-muted">
+                                        @rule.Notes
+                                        @if (!string.IsNullOrEmpty(rule.ExcludedTransactions))
+                                        {
+                                            <div class="text-danger small">Excludes: @rule.ExcludedTransactions</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Estimated Financial Return Simulation -->
+            <div class="cc-surface-card p-4 mb-4 highlight">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Estimated Annual Net Benefit</h5>
+                        <small class="text-muted">Calculated on standard monthly spending of ₹50,000 across categories</small>
+                    </div>
+                    <a asp-controller="Calculator" asp-action="Index" asp-route-cardId="@card.Id" class="btn btn-sm btn-cc-primary">
+                        Customize Spends <i class="bi bi-sliders ms-1"></i>
+                    </a>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded text-center">
+                            <div class="small text-muted">Annual Rewards Earned</div>
+                            <div class="fw-bold fs-4 text-success">₹@calc.AnnualRewardsRupees.ToString("N0")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded text-center">
+                            <div class="small text-muted">Effective Annual Fee</div>
+                            <div class="fw-bold fs-4 @(calc.IsFeeWaived ? "text-success" : "text-danger")">
+                                @(calc.IsFeeWaived ? "₹0 (Waived)" : "₹" + calc.EffectiveAnnualFee.ToString("N0"))
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded text-center">
+                            <div class="small text-muted">Net Renewal Benefit</div>
+                            <div class="fw-bold fs-4 text-primary">₹@calc.NetRenewalYearBenefit.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (calc.AssumptionsAndDisclosures.Any())
+                {
+                    <div class="small text-muted p-2 bg-light rounded">
+                        <strong>Calculated Notes:</strong> @string.Join(" ", calc.AssumptionsAndDisclosures.Take(2))
+                    </div>
+                }
+            </div>
+
+            <!-- Official Sources & Verification Provenance -->
+            <div class="cc-surface-card p-4 mb-4">
+                <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-shield-check text-success me-1"></i> Research & Verification Provenance</h6>
+                <p class="small text-muted mb-2">
+                    CardCompass validates specifications directly against official bank documentation:
+                </p>
+                <div class="p-3 bg-light rounded small">
+                    <div class="mb-1"><strong>Official Product Page:</strong> <a href="@card.OfficialProductUrl" target="_blank" rel="noopener">@card.OfficialProductUrl</a></div>
+                    <div><strong>Last Audit Timestamp:</strong> @card.SourceVerifiedDate.ToString("MMMM dd, yyyy") by CardCompass Editorial Team</div>
+                </div>
+            </div>
+
+            <!-- Similar Cards in Category -->
+            @if (Model.SimilarCards.Any())
+            {
+                <h5 class="fw-bold mb-3">Similar Cards You Might Consider</h5>
+                <div class="row g-3">
+                    @foreach (var simCard in Model.SimilarCards)
+                    {
+                        <div class="col-md-4">
+                            <div class="cc-surface-card p-3 h-100 text-center">
+                                <div class="fw-bold small mb-1">@simCard.Name</div>
+                                <div class="text-muted small mb-2">@(simCard.AnnualFee == 0 ? "Lifetime Free" : "Fee: ₹" + simCard.AnnualFee.ToString("N0"))</div>
+                                <a asp-controller="Cards" asp-action="Details" asp-route-slug="@simCard.Slug" class="btn btn-sm btn-outline-primary w-100">
+                                    View Card
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
