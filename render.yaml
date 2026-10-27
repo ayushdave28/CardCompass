@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: cardcompass
+    runtime: docker
+    plan: free
+    branch: main
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DatabaseProvider
+        value: Sqlite

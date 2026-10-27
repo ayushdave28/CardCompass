@@ -1,10 +1,26 @@
 using CardCompass.Web.Data;
 using CardCompass.Web.Models.Entities;
 using CardCompass.Web.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure dynamic port for Render / Docker environments
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
+// Configure Forwarded Headers for reverse proxies (Render, Docker, etc.)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Configure Database
 var dbProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
@@ -80,6 +96,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure HTTP request pipeline
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
