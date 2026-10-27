@@ -5,6 +5,7 @@
 *.suo
 *.userosscache
 *.sln.docstates
+*.code-workspace
 .vs/
 .vscode/
 
